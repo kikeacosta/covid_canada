@@ -157,11 +157,13 @@ extract_death4 <- function(j){
   return(av)
 }
 # str_split(deaths[pos_c + 1], "\\s{1,}")[[1]][5]
-i <- 58
+i <- 100
 all2 <- NULL
 for(i in 51:163){
   
-  l <- 6
+  if(i < 94) l <- 6
+  if(i >= 94) l <- 8
+  
   lc <- 4
   # reading pdf
   txt <- pdf_text(files[i])
@@ -251,11 +253,6 @@ all <- bind_rows(all1, all2) %>%
   select(-trash) %>% 
   drop_na()
 
-write_rds(all, "201020_covid_canada.rds")
-
-
-
-
 db_final <- all %>% 
   mutate(Country = "Canada",
          Region = "All",
@@ -290,6 +287,12 @@ write_sheet(db_final,
             ss = 'https://docs.google.com/spreadsheets/d/1awgAawvZLUFHO0KzJ_ntMtHR68UcuJoMpc9kVLUhJd8/edit#gid=0',
             sheet = "database")
 
+
+setwd("U:/gits/covid_canada")
+write_rds(db_final, "Data/201020_covid_canada.rds")
+
+
+# some visual verifications
 
 all %>% 
   filter(Sex == "b",

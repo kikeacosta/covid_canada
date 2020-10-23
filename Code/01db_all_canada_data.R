@@ -73,7 +73,6 @@ db_can <- db_can %>%
 
 ##########################
 
-
 # estimating new cases and new deaths
 db_can2 <- db_can %>% 
   arrange(Region, date_f) %>% 
@@ -82,80 +81,12 @@ db_can2 <- db_can %>%
          new_d = Deaths - lag(Deaths)) %>% 
   ungroup()
 
-# plotting cumulative cases 
-db_can2 %>% 
-  filter(date_f >= "2020-03-01") %>% 
-  drop_na(Cases) %>% 
-  ggplot()+
-  geom_point(aes(date_f, Cases, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  labs(title = "Cumulative cases over time")+
-  theme_bw()
-
-ggsave("Figures/cum_cases_over_time.png")
-
-# plotting cumulative deaths
-db_can2 %>% 
-  filter(date_f >= "2020-03-01") %>% 
-  drop_na(Deaths) %>% 
-  ggplot()+
-  geom_point(aes(date_f, Deaths, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  labs(title = "Cumulative deaths over time")+
-  theme_bw()
-
-ggsave("Figures/cum_deaths_over_time.png")
-
-# plotting new cases 
-db_can2 %>% 
-  filter(date_f >= "2020-03-01") %>% 
-  drop_na(new_c) %>% 
-  ggplot()+
-  geom_point(aes(date_f, new_c, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  labs(title = "New cases over time")+
-  theme_bw()
-
-ggsave("Figures/new_cases_over_time.png")
-
-# plotting new deaths
-db_can2 %>% 
-  filter(date_f >= "2020-03-01") %>% 
-  drop_na(new_d) %>% 
-  ggplot()+
-  geom_point(aes(date_f, new_d, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  labs(title = "New deaths over time")+
-  theme_bw()
-
-ggsave("Figures/new_deaths_over_time.png")
-
 # CFRs
 db_can3 <- db_can2 %>% 
   mutate(CFR = Deaths / Cases)
 
-# plotting CFR over time
-db_can3 %>% 
-  drop_na(CFR) %>% 
-  filter(date_f >= "2020-03-01") %>% 
-  ggplot()+
-  geom_point(aes(date_f, CFR, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  labs(title = "Overall CFR over time")+
-  theme_bw()
-
-ggsave("Figures/all_CFR_over_time.png")
-
-db_can3 %>% 
-  drop_na(Deaths, Cases) %>% 
-  filter(date_f >= "2020-03-01") %>% 
-  ggplot()+
-  geom_point(aes(Cases, Deaths, col = Region), size = 0.7, alpha = 0.8)+
-  # scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  labs(title = "Slopes of overall CFR over time")+
-  theme_bw()
-
-ggsave("Figures/all_CFR_slopes.png")
+# saving database
+write_rds(db_can3, "Data_output/canada_cases_deaths.rds")
 
 
 ######################################################
@@ -238,103 +169,10 @@ db_can_age2 <- db_can_age %>%
          new_d = Deaths - lag(Deaths)) %>% 
   ungroup()
 
-# plotting cumulative cases 
-db_can_age2 %>% 
-  filter(date_f >= "2020-03-01") %>% 
-  drop_na(Cases) %>% 
-  ggplot()+
-  geom_point(aes(date_f, Cases, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  facet_grid(~ Age)+
-  labs(title = "Cumulative cases over time")+
-  theme_bw()
-
-ggsave("Figures/age_cum_cases_over_time.png")
-
-# plotting cumulative deaths
-db_can_age2 %>% 
-  filter(date_f >= "2020-03-01") %>% 
-  drop_na(Deaths) %>% 
-  ggplot()+
-  geom_point(aes(date_f, Deaths, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  facet_grid(~ Age)+
-  labs(title = "Cumulative deaths over time")+
-  theme_bw()
-
-ggsave("Figures/age_cum_deaths_over_time.png")
-
-# plotting new cases 
-db_can_age2 %>% 
-  filter(date_f >= "2020-03-01", new_c >= 0 & new_c <= 3000) %>% 
-  drop_na(new_c) %>% 
-  ggplot()+
-  geom_point(aes(date_f, new_c, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  facet_grid(~ Age)+
-  labs(title = "New cases over time")+
-  theme_bw()
-
-ggsave("Figures/age_new_cases_over_time.png")
-
-# plotting new deaths
-db_can_age2 %>% 
-  filter(date_f >= "2020-03-01", new_d >= 0 & new_d <= 1000) %>% 
-  drop_na(new_d) %>% 
-  ggplot()+
-  geom_point(aes(date_f, new_d, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  facet_wrap(~ Age, scales = "free")+
-  labs(title = "New deaths over time")+
-  theme_bw()
-
-ggsave("Figures/age_new_deaths_over_time.png")
-
 # CFRs
 db_can_age3 <- db_can_age2 %>% 
   mutate(CFR = Deaths / Cases)
 
-# plotting CFR over time
-db_can_age3 %>% 
-  drop_na(CFR) %>% 
-  filter(date_f >= "2020-03-01", CFR <= 1) %>% 
-  ggplot()+
-  geom_point(aes(date_f, CFR, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  facet_wrap(~ Age, scales = "free")+
-  labs(title = "Overall CFR over time")+
-  theme_bw()
-
-ggsave("Figures/age_CFR_over_time.png")
-
-
-# some ages >= 50
-db_can_age3 %>% 
-  drop_na(CFR) %>% 
-  filter(date_f >= "2020-03-01", CFR <= 1, Age >= 50,
-         !(Age == 50 & CFR > 0.03),
-         !(Age == 60 & CFR > 0.10),
-         !(Age == 80 & CFR > 0.80)) %>% 
-  ggplot()+
-  geom_point(aes(date_f, CFR, col = Region), size = 0.7, alpha = 0.8)+
-  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  facet_wrap(~ Age, scales = "free")+
-  labs(title = "Overall CFR over time")+
-  theme_bw()
-
-ggsave("Figures/age_over_50_CFR_over_time.png")
-
-db_can_age3 %>% 
-  drop_na(Deaths, Cases) %>% 
-  filter(date_f >= "2020-03-01") %>% 
-  ggplot()+
-  geom_point(aes(Cases, Deaths, col = Region), size = 0.7, alpha = 0.8)+
-  facet_wrap(~ Age, scales = "free")+
-  # scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
-  labs(title = "Slopes of overall CFR over time")+
-  theme_bw()
-
-ggsave("Figures/age_all_CFR_slopes.png")
-
+write_rds(db_can_age3, "Data_output/cfr_by_age.rds")
 
 

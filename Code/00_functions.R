@@ -102,8 +102,6 @@ decomp <- function(p1, p2, d_exc){
   ggsave(paste0("Figures/cfr_diff_decomp_over_time_", p1, "_", p2, ".png"))
 }
 
-
-
 # ungrouping remaining life expectancy
 ungr_life_ex <- function(rg = "China", int = 1){
   
@@ -124,13 +122,14 @@ ungr_life_ex <- function(rg = "China", int = 1){
 }
 
 # fiting IFRs in Canada by province
+rg <- "Quebec"
 adj_ifrs_can <- function(rg){
   temp1 <- ifrs_ca %>% 
     filter(Region == rg)
   ages <- temp1 %>% pull(Age)
-  ifrs <- temp1 %>% pull(IFR)
-  md1 <- smooth.spline(x = ages, y = ifrs)
-  pr1 <- predict(md1, x = seq(0, 89, 0.5))$y
+  log_ifrs <- temp1 %>% pull(IFR) %>% log()
+  md1 <- smooth.spline(x = ages, y = log_ifrs)
+  pr1 <- exp(predict(md1, x = seq(0, 89, 0.5))$y)
   ifrs_ungr <- tibble(Region = rg, Age = seq(0, 89, 0.5), IFR = pr1)
   return(ifrs_ungr)
 }

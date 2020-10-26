@@ -62,9 +62,10 @@ db_exs <- read_rds("Data_output/lexs_canada_china.rds")
 ifrs <- verity %>% pull(IFR)
 # adding 5 years to place IFRs in the middle of the age interval
 ages <- verity %>% pull(Age) + 5
+log_ifrs <- log(ifrs)
 
-md1 <- smooth.spline(x = ages, y = ifrs)
-pr1 <- predict(md1, x = seq(0, 89, 1))$y
+md1 <- smooth.spline(x = ages, y = log_ifrs)
+pr1 <- exp(predict(md1, x = seq(0, 89, 1))$y)
 
 ifrs_ungr <- tibble(Age_ch = seq(0, 89, 1), IFR = pr1)
 
@@ -147,7 +148,7 @@ for(r in regs){
 
 ifrs_ca_adj %>% 
   ggplot()+
-  geom_line(aes(Age, IFR, col = Region))+
+  geom_line(aes(Age, IFR, col = Region))
   scale_y_log10()
 
 ifrs_ca_adj %>% 

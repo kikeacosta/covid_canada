@@ -6,149 +6,122 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 
-# setwd("U:/gits/covid_canada/")
-
 source("Code/00_functions.R")
 ##############
 # reading data
 ##############
 
 # IFRs by age from Verity et al.
-verity <- read_csv("Data/IFR_age_Verity_et_al.csv")
+ifrs_ch <- read_csv("Data/IFR_age_Verity_et_al.csv")
+# equivalent Canadian thanatological ages compared to China
+than_ch <- read_rds("Output/thanat_age_canada_china.rds")
 
-# remaining life expectancy for China and Canada by Province
-db_exs <- read_rds("Data_output/lexs_canada_china.rds")
+# IFRs by age from Spain
+ifrs_es <- read_csv("Data/IFR_sex_age_spain.csv") 
+# equivalent Canadian thanatological ages compared to Spain
+than_es <- read_rds("Output/thanat_age_canada_spain.rds")
 
-###############################
-# ungrouping Verity et al. IFRs
-###############################
+########################
+# scaling IFRs to Canada
+########################
 
-# function provided by Christina
-################################
-# to_ungroup <- function(to_ungroup,nr_grouped_years){
+# From China
+############
+
+# interpolating IFRs in single-years age
+ungr_ifrs_ch <- ungr_ifrs(ifrs_ch, 5)
+  
+# # visualizing the splines
+# ifrs_ch_vis <- ungr_ifrs_ch %>% mutate(source = "ungr") %>% 
+#   bind_rows(ifrs_ch %>% mutate(source = "verity",
+#                                Age = Age + 5))
 # 
-#   seq_ungrouped_years <- seq(0,length(to_ungroup)*nr_grouped_years)
-#   cumsum_to_ungroup <- cumsum(c(sum(to_ungroup),to_ungroup))
-#   grouped_time_points <- c(0,(1:length(to_ungroup))*nr_grouped_years)
-# 
-#   applied_smooth_spline <- smooth.spline(x=grouped_time_points,y=cumsum_to_ungroup)
-#   predict_cumsum_ungroup <- predict(applied_smooth_spline,x=seq_ungrouped_years)$y
-#   ungrouped <- diff(predict_cumsum_ungroup)
-#   return(ungrouped)
-# }
-# 
-# # Verity ages and IFR by age
-# ifrs <- verity %>% pull(IFR)
-# ages <- verity %>% pull(Age)
-# 
-# ifrs_ungr <- to_ungroup(to_ungroup = ifrs, nr_grouped_years = 10)
-# 
-# # constructing a table with grouped and ungrouped values
-# ifrs_all <- tibble(Age = seq(0, 89, 1), IFR = ifrs_ungr, source = "ungrouped") %>%
-#   bind_rows(tibble(Age = seq(5, 85, 10), IFR = ifrs, source = "verity"))
-# 
-# # plotting both
-# ifrs_all %>%
+# ifrs_ch_vis %>% 
 #   ggplot()+
 #   geom_point(aes(Age, IFR, col = source))+
-#   scale_x_continuous(breaks = seq(0, 90, 10))+
+#   scale_x_continuous(breaks = seq(0, 100, 10))+
 #   scale_y_log10()
-# # ggsave("Figures/plot1.png")
-
-# # very far from original values!!!
-
-# trying my own!
-################
-ifrs <- verity %>% pull(IFR)
-# adding 5 years to place IFRs in the middle of the age interval
-ages <- verity %>% pull(Age) + 5
-log_ifrs <- log(ifrs)
-
-md1 <- smooth.spline(x = ages, y = log_ifrs)
-pr1 <- exp(predict(md1, x = seq(0, 89, 1))$y)
-
-ifrs_ungr <- tibble(Age_ch = seq(0, 89, 1), IFR = pr1)
-
-ifrs_all <- tibble(Age = seq(0, 89, 1), IFR = pr1, source = "ungr") %>% 
-  bind_rows(tibble(Age = seq(5, 85, 10), IFR = ifrs, source = "verity"))
-
-ifrs_all %>% 
-  ggplot()+
-  geom_point(aes(Age, IFR, col = source))+
-  scale_x_continuous(breaks = seq(0, 90, 10))+
-  scale_y_log10()
-# ggsave("Figures/plot2.png")
-
-# it fits very well, I do not know something here?
-
-
-
-####################################
-# scaling IFRs to another population
-####################################
-
-# ungrouping remaining life expectancy
-
-# function provided by Christina
-################################
-
-# get_ungrouped_ex_2015_2020 <- function(country_name, lt_1950_2020){
-#   current_period_data <- lt_1950_2020[which(lt_1950_2020[,8]=="2015-2020"),]
-#   current_period_data <- current_period_data[which(current_period_data[,3]==country_name),]  
-#   current_ex_data <- as.numeric(current_period_data[,19])
-#   smooth_current_ex_data <- smooth.spline(x=c(0,1,seq(5,100,5)),y=current_ex_data)
-#   new_x <- c(seq(0,0.99,0.01),seq(1,4.99,0.01),seq(5,100,0.01))
-#   predict_smooth_current_ex_data <- predict(smooth_current_ex_data,new_x,len=new_x)
-#   return(predict_smooth_current_ex_data)
-# }
-
-
-# my own
-# ungrouping Canada in 0.001-year intervals
-regs <- db_exs %>% 
-  filter(Region != "China") %>% 
-  pull(Region) %>% 
-  unique()
-
-exs_ungr_ca <- NULL
-for(r in regs){
-  exs_ungr_ca <- exs_ungr_ca %>% 
-    bind_rows(ungr_life_ex(r, 0.001))  
-}
-
-# ungrouping china in 1-year intervals
-exs_ungr_ch <- ungr_life_ex("China", 1) %>% 
-  mutate(ex = round(ex, 3)) %>% 
-  rename(Age_ch = Age) %>% 
-  select(-Region)
-
-# finding equivalent ages betwwn China and Canada
-exs_ungr_ca2 <- exs_ungr_ca %>% 
-  mutate(ex = round(ex, 3)) %>% 
-  left_join(exs_ungr_ch, by = "ex") %>% 
-  drop_na() %>% 
-  arrange(Region, Age) %>% 
-  group_by(Region, Age_ch) %>% 
-  mutate(q = 1:n()) %>% 
-  ungroup() %>% 
-  filter(q == 1)
 
 # attributing IFR from China to Canada
-ifrs_ca <- exs_ungr_ca2 %>% 
-  left_join(ifrs_ungr) %>% 
-  drop_na()
+ifrs_ca_ch <- than_ch %>% 
+  left_join(ungr_ifrs_ch %>% 
+              rename(Age_ch = Age)) %>% 
+  mutate(Source = "Verity") %>% 
+  select(-Age_ch)
 
+# From Spain
+############
+
+# interpolating IFRs in single-years age
+ifrs_es_m <- ifrs_es %>% 
+  filter(Sex == "m")
+ungr_ifrs_es_m <- ungr_ifrs(ifrs_es_m, 2.5) %>% 
+  mutate(Sex = "m")
+
+ifrs_es_f <- ifrs_es %>% 
+  filter(Sex == "f")
+ungr_ifrs_es_f <- ungr_ifrs(ifrs_es_f, 2.5) %>% 
+  mutate(Sex = "f")
+
+ungr_ifrs_es <- bind_rows(ungr_ifrs_es_m, ungr_ifrs_es_f)
+
+# # visualizing the splines
+# ifrs_es_vis <- ungr_ifrs_es %>% mutate(source = "ungr") %>% 
+#   bind_rows(bind_rows(ifrs_es_m, ifrs_es_f) %>% 
+#               mutate(Age = Age + 2.5,
+#                      source = "spain"))
+# 
+# ifrs_es_vis %>% 
+#   ggplot()+
+#   geom_point(aes(Age, IFR, col = source))+
+#   scale_x_continuous(breaks = seq(0, 100, 10))+
+#   scale_y_log10()
+
+# attributing IFR from Spain to Canada
+ifrs_ca_es <- than_es %>% 
+  left_join(ungr_ifrs_es %>% 
+              rename(Age_es = Age)) %>% 
+  mutate(Source = "Spain") %>% 
+  select(-Age_es)
+
+# binding all IFRs for Canada
+ifrs_ca <- bind_rows(ifrs_ca_ch, ifrs_ca_es)
 
 ifrs_ca_adj <- NULL
+regs <- unique(ifrs_ca$Region)
 for(r in regs){
-  ifrs_ca_adj <- ifrs_ca_adj %>% 
-    bind_rows(adj_ifrs_can(r))  
+  temp1 <- ifrs_ca %>% 
+    filter(Region == r)
+  sxs <- unique(temp1$Sex)
+  for(s in sxs){
+    ifrs_ca_adj <- ifrs_ca_adj %>% 
+    bind_rows(ungr_ifrs(temp1, 0.5) %>% 
+                mutate(Region = r,
+                       Sex = s))  
+  }
 }
 
+ifrs_ca_adj2 <- ifrs_ca_adj %>% 
+  mutate(Source = case_when(Sex == "b" ~ "Verity et al.", 
+                            Sex == "f" ~ "f_Spain seroprev.",
+                            Sex == "m" ~ "m_Spain seroprev."))
 
-ifrs_ca_adj %>% 
+ifrs_ca_adj2 %>% 
+  filter(Source == "Verity et al.") %>% 
   ggplot()+
-  geom_line(aes(Age, IFR, col = Region))
+  geom_line(aes(Age, IFR, col = Region))+
+  scale_y_log10()
+
+ifrs_ca_adj2 %>% 
+  filter(Source == "m_Spain seroprev.") %>% 
+  ggplot()+
+  geom_line(aes(Age, IFR, col = Region))+
+  scale_y_log10()
+
+ifrs_ca_adj2 %>% 
+  filter(Source == "f_Spain seroprev.") %>% 
+  ggplot()+
+  geom_line(aes(Age, IFR, col = Region))+
   scale_y_log10()
 
 ifrs_ca_adj %>% 

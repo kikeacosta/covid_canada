@@ -86,7 +86,7 @@ db_can3 <- db_can2 %>%
   mutate(CFR = Deaths / Cases)
 
 # saving database
-write_rds(db_can3, "Data_output/canada_cases_deaths.rds")
+write_rds(db_can3, "Output/canada_cases_deaths.rds")
 
 
 ######################################################
@@ -173,6 +173,6 @@ db_can_age2 <- db_can_age %>%
 db_can_age3 <- db_can_age2 %>% 
   mutate(CFR = Deaths / Cases)
 
-write_rds(db_can_age3, "Data_output/cfr_by_age.rds")
+write_rds(db_can_age3, "Output/cfr_by_age.rds")
 
 

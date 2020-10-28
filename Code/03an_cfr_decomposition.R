@@ -9,9 +9,9 @@ library(lubridate)
 source("Code/00_functions.R")
 
 # reading Canada data
-db_can <- read_rds("Data_output/canada_cases_deaths.rds")
+db_can <- read_rds("Output/canada_cases_deaths.rds")
 
-db_can_age <- read_rds("Data_output/cfr_by_age.rds")
+db_can_age <- read_rds("Output/cfr_by_age.rds")
 
 db_can2 <- db_can %>% 
   select(Region, date_f, Cases, Deaths, CFR) %>% 

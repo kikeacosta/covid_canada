@@ -7,7 +7,7 @@ library(lubridate)
 library(ggplot2)
 
 # reading Canada data
-db_can <- read_rds("Data_output/canada_cases_deaths.rds")
+db_can <- read_rds("Output/canada_cases_deaths.rds")
 
 # plotting cumulative cases 
 db_can %>% 
@@ -110,7 +110,7 @@ ggsave("Figures/all_CFR_slopes.png")
 # by age both sexes
 ######################################################
 
-db_can_age <- read_rds("Data_output/cfr_by_age.rds")
+db_can_age <- read_rds("Output/cfr_by_age.rds")
 
 # plotting cumulative cases 
 db_can_age %>% 

@@ -103,33 +103,36 @@ decomp <- function(p1, p2, d_exc){
 }
 
 # ungrouping remaining life expectancy
-ungr_life_ex <- function(rg = "China", int = 1){
-  
-  db_exs2 <- db_exs %>% 
-    filter(Region == rg)
-  
-  ages <- db_exs2 %>% pull(Age)
-  exs <- db_exs2 %>% pull(ex)
+ungr_life_ex <- function(db, ax){
+  ages <- db %>% pull(Age)
+  exs <- db %>% pull(ex)
   # smoothing remaining life exp
-  
-  new_x <- seq(0, 100, int)
+  new_x <- seq(0, 100, ax)
   md2 <- smooth.spline(x = ages, y = exs)
-  
-  exs_ungr <- tibble(Region = rg,
-                     Age = seq(0, 100, int),
-                     ex = predict(md2, seq(0, 100, int))$y)
-  
+  exs_ungr <- tibble(Age = seq(0, 100, ax),
+                     ex = predict(md2, seq(0, 100, ax))$y)
+}
+
+# ungrouping IFRs
+ungr_ifrs <- function(db, ax){
+  ages <- db %>% pull(Age) + ax
+  log_ifrs <- log(db %>% pull(IFR))
+  # smoothing in single-years of age
+  new_x <- seq(0, 100)
+  md2 <- smooth.spline(x = ages, y = log_ifrs)
+  ifrs_ungr <- tibble(Age = new_x,
+                     IFR = exp(predict(md2, new_x)$y))
+  return(ifrs_ungr)
 }
 
 # fiting IFRs in Canada by province
-rg <- "Quebec"
-adj_ifrs_can <- function(rg){
-  temp1 <- ifrs_ca %>% 
-    filter(Region == rg)
-  ages <- temp1 %>% pull(Age)
-  log_ifrs <- temp1 %>% pull(IFR) %>% log()
+adj_ifrs_can <- function(db){
+  ages <- db %>% pull(Age) + ax
+  log_ifrs <- db %>% pull(IFR) %>% log()
+  # smoothing in single-years of age
+  new_x <- seq(0, 100)
   md1 <- smooth.spline(x = ages, y = log_ifrs)
-  pr1 <- exp(predict(md1, x = seq(0, 89, 0.5))$y)
-  ifrs_ungr <- tibble(Region = rg, Age = seq(0, 89, 0.5), IFR = pr1)
+  pr1 <- exp(predict(md1, new_x)$y)
+  ifrs_ungr <- tibble(Region = rg, Age = seq(0, 100, 0.5), IFR = pr1)
   return(ifrs_ungr)
 }

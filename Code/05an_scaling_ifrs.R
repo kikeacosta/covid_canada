@@ -5,8 +5,8 @@ Sys.setlocale("LC_ALL","English")
 library(tidyverse)
 library(lubridate)
 library(readxl)
-
 source("Code/00_functions.R")
+
 ##############
 # reading data
 ##############
@@ -94,8 +94,10 @@ for(r in regs){
     filter(Region == r)
   sxs <- unique(temp1$Sex)
   for(s in sxs){
+    temp2 <- temp1 %>% 
+      filter(Sex == s)
     ifrs_ca_adj <- ifrs_ca_adj %>% 
-    bind_rows(ungr_ifrs(temp1, 0.5) %>% 
+    bind_rows(ungr_ifrs(temp2, 0.5) %>% 
                 mutate(Region = r,
                        Sex = s))  
   }
@@ -124,41 +126,31 @@ ifrs_ca_adj2 %>%
   geom_line(aes(Age, IFR, col = Region))+
   scale_y_log10()
 
-ifrs_ca_adj %>% 
-  filter(Age >= 60) %>% 
+ifrs_ca_adj2 %>% 
+  filter(Region == "All") %>% 
   ggplot()+
-  geom_line(aes(Age, IFR, col = Region))+
+  geom_line(aes(Age, IFR, col = Source))+
   scale_y_log10()
 
-ifrs_ca_adj %>% 
-  bind_rows(ifrs_ungr %>% 
-              rename(Age = Age_ch) %>% 
-              mutate(Region = "China")) %>% 
-  ggplot()+
-  geom_line(aes(Age, IFR, col = Region))+
-  scale_y_log10()+
-  scale_x_continuous(breaks = seq(0, 90, 10))+
-  labs(title = "Age-specific IFRs by region")+
-  theme_bw()
 
-ggsave("Figures/age-spe_ifr_canada_china.png")
+# ggsave("Figures/age-spe_ifr_canada_china.png")
+# 
+# ifrs_ca_adj %>% 
+#   bind_rows(ifrs_ungr %>% 
+#               rename(Age = Age_ch) %>% 
+#               mutate(Region = "China")) %>% 
+#   filter(Age >= 60) %>% 
+#   ggplot()+
+#   geom_line(aes(Age, IFR, col = Region))+
+#   scale_y_log10()+
+#   scale_x_continuous(breaks = seq(0, 90, 10))+
+#   labs(title = "Age-specific IFRs by region ages >60")+
+#   theme_bw()
+# 
+# ggsave("Figures/age-spe_ifr_60plus.png")
+# 
+# ifr_10age_can <- ifrs_ca_adj %>% 
+#   filter(Age %in% seq(5, 85, 10)) %>% 
+#   mutate(Age = Age -5)
 
-ifrs_ca_adj %>% 
-  bind_rows(ifrs_ungr %>% 
-              rename(Age = Age_ch) %>% 
-              mutate(Region = "China")) %>% 
-  filter(Age >= 60) %>% 
-  ggplot()+
-  geom_line(aes(Age, IFR, col = Region))+
-  scale_y_log10()+
-  scale_x_continuous(breaks = seq(0, 90, 10))+
-  labs(title = "Age-specific IFRs by region ages >60")+
-  theme_bw()
-
-ggsave("Figures/age-spe_ifr_60plus.png")
-
-ifr_10age_can <- ifrs_ca_adj %>% 
-  filter(Age %in% seq(5, 85, 10)) %>% 
-  mutate(Age = Age -5)
-
-write_rds(ifr_10age_can, "Data_output/ifrs_can_age10.rds")
+write_rds(ifrs_ca_adj2, "Output/ifr_age_sex_canada.rds")

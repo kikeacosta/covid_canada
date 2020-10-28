@@ -18,7 +18,7 @@ osf_retrieve_file("43ucn") %>%
   osf_download(conflicts = "overwrite") 
 
 # This reads it in
-db_cov <-  read_csv("Output_10.zip",
+db_cov <-  read_csv("Data/Output_10.zip",
                     skip = 3,
                     col_types = "ccccciiddd")
 

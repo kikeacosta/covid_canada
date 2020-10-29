@@ -9,53 +9,13 @@ library(lubridate)
 source("Code/00_functions.R")
 
 # reading Canada data
-db_can <- read_rds("Output/canada_cases_deaths.rds")
-
 db_can_age <- read_rds("Output/cfr_by_age_sex.rds")
 
 db_oth <- read_rds("Output/other_regions_by_age_sex.rds")
 
-db_can2 <- db_can %>% 
-  filter(Sex == "b") %>% 
-  select(Region, Date, Cases, Deaths, CFR) %>% 
-  rename(Cases_t = Cases,
-         Deaths_t = Deaths,
-         CFR_t = CFR) 
-
-db_can_age2 <- db_can_age %>% 
-  filter(Sex == "b") %>% 
-  select(Region, Date, Age, Cases, Deaths, CFR) %>% 
-  arrange(Region, Date, Age) %>% 
-  group_by(Region, Date) %>%  
-  mutate(age_dist = Cases / sum(Cases)) %>% 
-  ungroup() %>% 
-  left_join(db_can2) %>% 
-  filter(!is.na(CFR_t),
-         CFR_t > 0) %>% 
-  mutate(CFR = replace_na(CFR, 0),
-         Region = ifelse(Region == 'British Columbia', "BC", Region))
-
-dates_all <- db_can_age2 %>% 
-  filter(Region != "All") %>% 
-  select(Region, Date) %>% 
-  unique() %>% 
-  mutate(n = 1) %>% 
-  spread(Region, n) %>% 
-  mutate(av = Alberta + BC + Montreal + Ontario + Quebec) %>% 
-  filter(av == 5)
-
-p1 <- "Quebec"
-p2 <- "Montreal"
-d_exc <- c(ymd("2020-04-23"), ymd("2020-04-28"), ymd("2020-04-29"))
-d_exc <- c(ymd("2020-04-23"))
-d_exc <- c(ymd("2020-04-28"), ymd("2020-04-29"))
-
-# decomp(p1, p2, d_exc)
-
-
 # CFR decomposition at one specific date
 ########################################
-
+s <- "b"
 unique(db_oth$Region)
 
 # grouping both sexes in Canada and Ontario
@@ -127,11 +87,12 @@ for(p1 in refs){
   
   db_diffs_can2 %>% 
     ggplot()+
-    geom_bar(aes(reorder(P2, -diff), Value, fill = Component, col = Component), stat = "identity")+
+    geom_bar(aes(reorder(P2, -diff), Value, fill = Component, col = Component), stat = "identity", alpha = 0.5)+
     geom_point(aes(reorder(P2, -diff), diff), col = "black", size = 2)+
     geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    scale_color_manual(values = c("blue", "red"))+
-    scale_fill_manual(values = c("blue", "red"))+
+    scale_y_continuous(limits = c(-0.1, 0.1))+
+    scale_color_manual(values = c("#43a2ca", "#e34a33"))+
+    scale_fill_manual(values = c("#43a2ca", "#e34a33"))+
     labs(title = paste0("Decomposition of CFR, ", p1, " as reference"),
          x = "Countries")+
     theme_bw()+
@@ -156,11 +117,12 @@ for(p1 in refs){
   db_diffs_can2 %>% 
     ggplot()+
     geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    geom_bar(aes(reorder(P2, -diff), Value, fill = Component, col = Component), stat = "identity")+
-    geom_point(aes(reorder(P2, -diff), diff), col = "black", size = 2)+
+    geom_bar(aes(reorder(P2, -diff), Value, fill = Component, col = Component), stat = "identity", alpha = 0.8)+
+    geom_point(aes(reorder(P2, -diff), diff), col = "black", size = 4)+
+    scale_y_continuous(limits = c(-0.1, 0.1))+
     geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    scale_color_manual(values = c("blue", "red"))+
-    scale_fill_manual(values = c("blue", "red"))+
+    scale_color_manual(values = c("#43a2ca", "#e34a33"))+
+    scale_fill_manual(values = c("#43a2ca", "#e34a33"))+
     labs(title = paste0("Decomposition of CFR, ", p1, " as reference"),
          x = "Cities")+
     theme_bw()+

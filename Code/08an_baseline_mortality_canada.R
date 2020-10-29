@@ -15,15 +15,31 @@ pkgs <- c("tidyverse",
 
 lapply(pkgs, require, character.only = T)
 select <- dplyr::select
-
 registerDoParallel(cores = 4)
-
 source("Code/00_functions.R")
+
 
 # reading mortality and population data from StatCan files
 db <- read_rds("Output/weekly_canada.rds") 
 
+
+# definition of flu seasons and heat waves in Canada 
+####################################################
+# Euromomo definition
+exc_type <- "emomo" 
+flu_season <- c(seq(46, 54, 1), seq(1, 14, 1))
+heat_waves <- seq(27, 35, 1)
+# option 2 definition
+exc_type <- "long_flu" 
+flu_season <- c(seq(1, 20, 1), seq(40, 54, 1))
+heat_waves <- 0
+  
+# Initial year for baseline estimation
+######################################
+ym <- 2010
+
 # database for baseline estimation
+##################################
 db2 <- db %>% 
   mutate(Deaths = Deaths + 1) %>%
   group_by(Year, Region, Age, Sex) %>% 
@@ -36,35 +52,34 @@ db2 <- db %>%
   mutate(sn52 = sin((2*pi*t)/(52)),
          cs52 = cos((2*pi*t)/(52)),
          # excluding winter (wks 46-14), summer (wks 27-35), 2009 and COVID-19 pandemics
-         include = ifelse(((Week >= 15 & Week <= 26) |
-                             (Week >= 36 & Week <= 45)) &
+         include = ifelse(!(Week %in% heat_waves | Week %in% flu_season) &
                             (Year != 2020 & Year != 2009),
                           1, 0))
 
-skip_to_next <- F
+# skip_to_next <- F
 
-# c <- "Canada"
-# s <- "b"
+# Testing single populations
+############################
+# c <- "Quebec"
+# s <- "m"
 # a <- "All"
-ym <- 2014
-
-# temp <- db2 %>% 
+# 
+# temp <- db2 %>%
 #   filter(Region == c,
 #          Sex == s,
 #          Age == a,
 #          Year >= ym)
 # 
-# test <- fit_baseline(temp)
+# fit_baseline(temp)
 
-# db2 <- temp
 
+# Fitting all regions, sexes, and ages in Canada
+################################################
 cts <- unique(db2$Region)
-
 cts <- c("Canada", "Ontario", "Quebec")
-cts <- c("British Columbia", "Alberta")
+cts <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec")
 sxs <- unique(db2$Sex)
 ags <- unique(db2$Age)
-
 
 db_all_blns <- NULL
 
@@ -77,32 +92,13 @@ for (c in cts) {
                Age == a,
                Year >= ym)
       cat(paste(c, s, a, "\n", sep = "_"))
-      temp2 <- fit_baseline(temp)
+      temp2 <- fit_baseline(temp, exc_type)
       db_all_blns <- db_all_blns %>% 
         bind_rows(temp2)
     }
   }
 }
 
-#########################
-# appending all estimates
-#########################
+write_csv(db_all_blns, path = paste0("Output/baseline_mortality_", ym, "_", exc_type, ".csv"))
+detach(package:MASS)
 
-# db_all <- NULL
-# getwd()
-# 
-# temp = list.files("Data_output/single_ests/", pattern="*.csv")
-# 
-# length(temp)
-# # i <- 1
-# for (i in 1:length(temp)) {
-#   db_temp <- read_csv(paste0("Data_output/single_ests/", temp[i])) %>% 
-#     as_tibble() %>% 
-#     mutate(Sex = as.character(Sex),
-#            Sex = ifelse(Sex == "FALSE", "f", Sex))
-#   db_all <- bind_rows(db_all, db_temp)
-# }
-# 
-# detach(package:MASS)
-# 
-write_csv(db_all_blns, path = "Output/baseline_mortality2.csv")

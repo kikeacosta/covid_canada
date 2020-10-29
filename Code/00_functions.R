@@ -172,7 +172,7 @@ boot_pi <- function(model, odata, pdata, n, p) {
 # sx <- "b"
 # ag <- 80
 # ymin <- 2014
-fit_baseline <- function(db2) {
+fit_baseline <- function(db2, exc_type) {
   
   skip_to_next <- F
   
@@ -273,7 +273,7 @@ fit_baseline <- function(db2) {
            exc_reg_pi = ifelse(Deaths > up, 1, 0)) %>% 
     dplyr::select(Region, Date, everything())
   
-  write_csv(db4, path = paste0("Output/excess_singles/", c, "_", s, "_", a, "_baseline.csv"))
+  # write_csv(db4, path = paste0("Output/excess_singles/", c, "_", s, "_", a, "_baseline_", ym, "_", exc_type, ".csv"))
   
   db4 %>%
     ggplot()+
@@ -289,7 +289,7 @@ fit_baseline <- function(db2) {
       axis.text.y = element_text(size=10),
       axis.title.x = element_text(size=11),
       axis.title.y = element_text(size=11))+
-    ggsave(paste0("Figures/excess_singles/", c, "_", s, "_", a, ".png"), dpi = 300, width = 6, height = 4)
+    ggsave(paste0("Figures/excess_singles/", c, "_", s, "_", a, "_", ym, "_", exc_type, ".png"), dpi = 300, width = 6, height = 4)
   
   return(db4)
 }

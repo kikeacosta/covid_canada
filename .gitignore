@@ -2,6 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+Rhistory
 Data/Output_10.zip
 Example_scaling_model
 Code/.Rhistory
@@ -9,3 +10,5 @@ Output/excess_singles
 Figures/excess_singles
 Data/13100768-eng.zip
 Data/17100005-eng.zip
+Data/pdfs_canada
+Data/Toronto

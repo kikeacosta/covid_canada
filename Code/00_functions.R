@@ -3,10 +3,10 @@ Sys.setlocale("LC_ALL","English")
 
 
 # Kitagawa decomposition
-kita <- function(p1, p2, d){
+kita <- function(db, p1, p2, d){
   
-  vals1 <- db_can_age2 %>% 
-    filter(date_f %in% d,
+  vals1 <- db %>% 
+    filter(Date %in% d,
            Region %in% c(p1, p2)) %>% 
     group_by(Region) %>% 
     summarise(CFR_t = max(CFR_t)) %>% 
@@ -17,15 +17,15 @@ kita <- function(p1, p2, d){
                      vals1[2,2] %>% 
                        rename(CFR2 = CFR_t))
   
-  cfr1 <- db_can_age2 %>% 
-    filter(date_f %in% d,
+  cfr1 <- db %>% 
+    filter(Date %in% d,
            Region %in% p1) %>% 
     select(Age, age_dist, CFR) %>% 
     rename(C1 = age_dist, 
            CFR1 = CFR)
   
-  cfr2 <- db_can_age2 %>% 
-    filter(date_f %in% d,
+  cfr2 <- db %>% 
+    filter(Date %in% d,
            Region %in% p2) %>% 
     select(Age, age_dist, CFR) %>% 
     rename(C2 = age_dist, 
@@ -52,13 +52,73 @@ kita <- function(p1, p2, d){
   return(result)
 }
 
+
+kitagawa <- function(db, p1, p2, s){
+  two <- db %>% 
+    filter(Region %in% c(p1, p2),
+           Sex == s)
+  
+  vals1 <- two %>% 
+    select(Region, CFR_t) %>% 
+    unique()
+  
+  vals1 %>% filter(Region == p1) %>% pull(CFR_t)
+  
+  vals2 <- tibble(CFR1 = vals1 %>% filter(Region == p1) %>% pull(CFR_t),
+                  CFR2 = vals1 %>% filter(Region == p2) %>% pull(CFR_t))
+    
+  cfr1 <- db %>% 
+    filter(Region == p1,
+           Sex == s) %>% 
+    select(Age, age_dist, CFR) %>% 
+    rename(C1 = age_dist, 
+           CFR1 = CFR)
+  
+  cfr2 <- db %>% 
+    filter(Region == p2,
+           Sex == s) %>% 
+    select(Age, age_dist, CFR) %>% 
+    rename(C2 = age_dist, 
+           CFR2 = CFR)
+  
+  cfrs <- left_join(cfr1, cfr2) %>% 
+    mutate(d_C = C2 - C1,
+           d_CFR = CFR2 - CFR1,
+           a_C = (C2 + C1) * 0.5,
+           a_CFR = (CFR2 + CFR1) * 0.5)
+  
+  # decomposed into age and fatality component
+  cfrs_dec <- cfrs %>% 
+    group_by() %>% 
+    summarise(alpha = sum(d_C * a_CFR),
+              betha = sum(a_C * d_CFR)) %>%
+    ungroup() %>% 
+    mutate(diff = alpha + betha) %>% 
+    select(diff, alpha, betha)
+  
+  result <- bind_cols(vals2, cfrs_dec) %>% 
+    select(CFR1, CFR2, diff, alpha, betha)
+  
+  return(result)
+}
+
+
+
+
+
 # decomposing CFR differences between populations over time
 decomp <- function(p1, p2, d_exc){
   
+  # p1 <- "Quebec"
+  # p2 <- "Montreal"
+  # d_exc <- c(ymd("2020-04-28"), ymd("2020-04-29"))
+  # 
+  # 
+  
   dates2 <- db_can_age2 %>% 
     filter(Region %in% c(p1, p2),
-           !(date_f %in% d_exc)) %>% 
-    select(Region, date_f) %>% 
+           !(Date %in% d_exc)) %>% 
+    select(Region, Date) %>% 
     unique() %>% 
     mutate(n = 1) %>% 
     spread(Region, n) %>% 
@@ -66,26 +126,27 @@ decomp <- function(p1, p2, d_exc){
            pop2 = 3) %>% 
     mutate(av = pop1 + pop2) %>% 
     filter(!is.na(av)) %>% 
-    pull(date_f)
+    pull(Date)
+  
   ymd(dates2[12])
   
   db_res <- NULL
   
   for(d in dates2){
-    res_t <- kita(p1, p2, d)
+    res_t <- kita(db_can_age2, p1, p2, d)
     db_res <- db_res %>% 
       bind_rows(res_t)
   }
   
-  bd_res2 <- tibble(date_f = dates2, R1 = p1, R2 = p2) %>% 
+  bd_res2 <- tibble(Date = dates2, R1 = p1, R2 = p2) %>% 
     bind_cols(db_res)
   
   bd_res3 <- bd_res2 %>% 
-    select(date_f, alpha, betha) %>% 
-    gather(-date_f, key = "Component", value = "Value")
+    select(Date, alpha, betha) %>% 
+    gather(-Date, key = "Component", value = "Value")
   
   diffs <- bd_res2 %>% 
-    select(date_f, diff)
+    select(Date, diff)
   
   bd_res4 <- bd_res3 %>% 
     left_join(diffs)
@@ -93,8 +154,8 @@ decomp <- function(p1, p2, d_exc){
   bd_res4 %>% 
     ggplot()+
     geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    geom_bar(aes(date_f, Value, col = Component), stat = "identity", fill = "transparent")+
-    geom_point(aes(date_f, diff), col = "black")+
+    geom_bar(aes(Date, Value, col = Component), stat = "identity", fill = "transparent")+
+    geom_point(aes(Date, diff), col = "black")+
     scale_color_manual(values = c("blue", "red"))+
     labs(title = paste0("Decomposition of CFR difference between ", p1, " and ", p2, " over time"))+
     theme_bw()

@@ -27,11 +27,11 @@ db <- read_rds("Output/weekly_canada.rds")
 ####################################################
 # Euromomo definition
 exc_type <- "emomo" 
-flu_season <- c(seq(46, 54, 1), seq(1, 14, 1))
+flu_season <- c(seq(1, 14, 1), seq(46, 54, 1))
 heat_waves <- seq(27, 35, 1)
 # option 2 definition
 exc_type <- "long_flu" 
-flu_season <- c(seq(1, 20, 1), seq(40, 54, 1))
+flu_season <- c(seq(1, 18, 1), seq(42, 54, 1))
 heat_waves <- 0
   
 # Initial year for baseline estimation

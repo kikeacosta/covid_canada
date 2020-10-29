@@ -31,16 +31,16 @@ than_es <- read_rds("Output/thanat_age_canada_spain.rds")
 # interpolating IFRs in single-years age
 ungr_ifrs_ch <- ungr_ifrs(ifrs_ch, 5)
   
-# # visualizing the splines
-# ifrs_ch_vis <- ungr_ifrs_ch %>% mutate(source = "ungr") %>% 
-#   bind_rows(ifrs_ch %>% mutate(source = "verity",
-#                                Age = Age + 5))
-# 
-# ifrs_ch_vis %>% 
-#   ggplot()+
-#   geom_point(aes(Age, IFR, col = source))+
-#   scale_x_continuous(breaks = seq(0, 100, 10))+
-#   scale_y_log10()
+# visualizing the splines
+ifrs_ch_vis <- ungr_ifrs_ch %>% mutate(source = "ungr") %>%
+  bind_rows(ifrs_ch %>% mutate(source = "verity",
+                               Age = Age + 5))
+
+ifrs_ch_vis %>%
+  ggplot()+
+  geom_point(aes(Age, IFR, col = source))+
+  scale_x_continuous(breaks = seq(0, 100, 10))+
+  scale_y_log10()
 
 # attributing IFR from China to Canada
 ifrs_ca_ch <- than_ch %>% 
@@ -65,17 +65,17 @@ ungr_ifrs_es_f <- ungr_ifrs(ifrs_es_f, 2.5) %>%
 
 ungr_ifrs_es <- bind_rows(ungr_ifrs_es_m, ungr_ifrs_es_f)
 
-# # visualizing the splines
-# ifrs_es_vis <- ungr_ifrs_es %>% mutate(source = "ungr") %>% 
-#   bind_rows(bind_rows(ifrs_es_m, ifrs_es_f) %>% 
-#               mutate(Age = Age + 2.5,
-#                      source = "spain"))
-# 
-# ifrs_es_vis %>% 
-#   ggplot()+
-#   geom_point(aes(Age, IFR, col = source))+
-#   scale_x_continuous(breaks = seq(0, 100, 10))+
-#   scale_y_log10()
+# visualizing the splines
+ifrs_es_vis <- ungr_ifrs_es %>% mutate(source = "ungr") %>%
+  bind_rows(bind_rows(ifrs_es_m, ifrs_es_f) %>%
+              mutate(Age = Age + 2.5,
+                     source = "spain"))
+
+ifrs_es_vis %>%
+  ggplot()+
+  geom_point(aes(Age, IFR, col = source))+
+  scale_x_continuous(breaks = seq(0, 100, 10))+
+  scale_y_log10()
 
 # attributing IFR from Spain to Canada
 ifrs_ca_es <- than_es %>% 
@@ -105,28 +105,33 @@ for(r in regs){
 
 ifrs_ca_adj2 <- ifrs_ca_adj %>% 
   mutate(Source = case_when(Sex == "b" ~ "Verity et al.", 
+                            Sex == "f" ~ "Spain seroprev.",
+                            Sex == "m" ~ "Spain seroprev."))
+
+ifrs_ca_adj_vis <- ifrs_ca_adj %>% 
+  mutate(Source = case_when(Sex == "b" ~ "b_Verity et al.", 
                             Sex == "f" ~ "f_Spain seroprev.",
                             Sex == "m" ~ "m_Spain seroprev."))
 
-ifrs_ca_adj2 %>% 
-  filter(Source == "Verity et al.") %>% 
+ifrs_ca_adj_vis %>% 
+  filter(Source == "b_Verity et al.") %>% 
   ggplot()+
   geom_line(aes(Age, IFR, col = Region))+
   scale_y_log10()
 
-ifrs_ca_adj2 %>% 
+ifrs_ca_adj_vis %>% 
   filter(Source == "m_Spain seroprev.") %>% 
   ggplot()+
   geom_line(aes(Age, IFR, col = Region))+
   scale_y_log10()
 
-ifrs_ca_adj2 %>% 
+ifrs_ca_adj_vis %>% 
   filter(Source == "f_Spain seroprev.") %>% 
   ggplot()+
   geom_line(aes(Age, IFR, col = Region))+
   scale_y_log10()
 
-ifrs_ca_adj2 %>% 
+ifrs_ca_adj_vis %>% 
   filter(Region == "All") %>% 
   ggplot()+
   geom_line(aes(Age, IFR, col = Source))+

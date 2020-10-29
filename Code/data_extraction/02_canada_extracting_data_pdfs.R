@@ -39,8 +39,8 @@ extract_death2 <- function(j){
   return(av)
 }
 
-setwd("U:/nextcloud/Projects/COVID_19/COVerAge-DB/canada/statcan_pdf/")
-files <- list.files(pattern = "pdf$")
+# setwd("U:/nextcloud/Projects/COVID_19/COVerAge-DB/canada/statcan_pdf/")
+files <- list.files(path = "Data/pdfs_canada", pattern = "pdf$")
 i <- 5
 all1 <- NULL
 for(i in 1:50){
@@ -49,8 +49,9 @@ for(i in 1:50){
                  i >= 12 ~ 7)
   lc <- 3
   
+  file_loc <- paste0("Data/pdfs_canada/", files[i])
   # reading pdf
-  txt <- pdf_text(files[i])
+  txt <- pdf_text(file_loc)
   totals <- capture.output(cat(txt[grep("reported in Canada by location|Areas in Canada with cases", txt)]))
   cases <- capture.output(cat(txt[grep("Demographic characteristics|Age by sex distribution", txt)]))
   deaths <- capture.output(cat(txt[grep("Summary of severe cases|Deceased|Case Severity|Age distribution of ", txt)]))
@@ -165,8 +166,10 @@ for(i in 51:163){
   if(i >= 94) l <- 8
   
   lc <- 4
+  
   # reading pdf
-  txt <- pdf_text(files[i])
+  file_loc <- paste0("Data/pdfs_canada/", files[i])
+  txt <- pdf_text(file_loc)
   totals <- capture.output(cat(txt[grep("Areas in Canada with cases", txt)]))
   if(i < 65) cases <- capture.output(cat(txt[grep("Age by sex distribution", txt)]))
   if(i >= 65) cases <- capture.output(cat(txt[grep("Exposure setting", txt)]))
@@ -243,6 +246,9 @@ for(i in 51:163){
     bind_rows(all_temp)
 }
 
+dates_problems <- c("2020-05-24", "2020-05-25", "2020-05-26", "2020-05-27",
+                    "2020-07-22", "2020-07-23", "2020-07-24", "2020-07-25", 
+                    "2020-07-26", "2020-07-27") 
 
 all <- bind_rows(all1, all2) %>% 
   separate(Age, c("Age", "trash"), sep = "-") %>% 
@@ -251,7 +257,12 @@ all <- bind_rows(all1, all2) %>%
                          TRUE ~ Age),
          Value = as.numeric(Value)) %>% 
   select(-trash) %>% 
-  drop_na()
+  drop_na() %>% 
+  filter(!(date %in% ymd(dates_problems)))
+
+unique(all$date)
+
+write_rds(all, "Data/201029_covid_canada.rds")
 
 db_final <- all %>% 
   mutate(Country = "Canada",
@@ -260,16 +271,16 @@ db_final <- all %>%
                       sprintf("%02d", month(date)),
                       year(date), sep = "."),
          Code = paste0("CA", Date),
-         Metric = "Counts",
+         Metric = "Count",
          AgeInt = case_when(Age == "0" ~ "20",
-                            Age == "20" & Measure == "Cases" & date <= "2020-06-07" ~ "20",
-                            Age == "40" & Measure == "Cases" & date <= "2020-06-07" ~ "20",
-                            Age == "60" & Measure == "Cases" & date <= "2020-06-07" ~ "20",
-                            Age == "40" & Measure == "Cases" & date <= "2020-06-07" ~ "20",
-                            Age == "20" & Measure == "Deaths" & date <= "2020-07-07" ~ "20",
-                            Age == "40" & Measure == "Deaths" & date <= "2020-07-07" ~ "20",
-                            Age == "60" & Measure == "Deaths" & date <= "2020-07-07" ~ "20",
-                            Age == "40" & Measure == "Deaths" & date <= "2020-07-07" ~ "20",
+                            Age == "20" & Measure == "Cases" & date <= "2020-06-08" ~ "20",
+                            Age == "40" & Measure == "Cases" & date <= "2020-06-08" ~ "20",
+                            Age == "60" & Measure == "Cases" & date <= "2020-06-08" ~ "20",
+                            Age == "40" & Measure == "Cases" & date <= "2020-06-08" ~ "20",
+                            Age == "20" & Measure == "Deaths" & date <= "2020-07-06" ~ "20",
+                            Age == "40" & Measure == "Deaths" & date <= "2020-07-06" ~ "20",
+                            Age == "60" & Measure == "Deaths" & date <= "2020-07-06" ~ "20",
+                            Age == "40" & Measure == "Deaths" & date <= "2020-07-06" ~ "20",
                             Age == "80" ~ "25",
                             Age == "TOT" ~ "",
                             TRUE ~ "10")) %>% 
@@ -288,8 +299,8 @@ write_sheet(db_final,
             sheet = "database")
 
 
-setwd("U:/gits/covid_canada")
-write_rds(db_final, "Data/201020_covid_canada.rds")
+# setwd("U:/gits/covid_canada")
+# write_rds(db_final, "Data/201029_covid_canada.rds")
 
 
 # some visual verifications

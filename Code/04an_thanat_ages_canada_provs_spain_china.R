@@ -60,14 +60,14 @@ db_ex_ca2 <- db_ex_ca %>%
 
 # Spain
 #######
-db_ex_es_m <- read_delim("Data/fltper_1x1.txt", delim = " ", skip = 1) %>% 
+db_ex_es_m <- read_delim("Data/mltper_1x1.txt", delim = " ", skip = 1) %>% 
   rename(Year = 1,
          Age = 2,
          ex = 10) %>% 
   select(Year, Age, ex) %>% 
   mutate(Sex = "m")
 
-db_ex_es_f <- read_delim("Data/mltper_1x1.txt", delim = " ", skip = 1) %>% 
+db_ex_es_f <- read_delim("Data/fltper_1x1.txt", delim = " ", skip = 1) %>% 
   rename(Year = 1,
          Age = 2,
          ex = 10) %>% 
@@ -172,3 +172,33 @@ exs_ca_ch <- exs_ungr_ca %>%
 
 write_rds(exs_ca_ch, "Output/thanat_age_canada_china.rds")
 
+exs_ca_es %>% 
+  ggplot()+
+  geom_line(aes(Age, Age_es, col = Sex))+
+  facet_grid(~ Region)+
+  coord_fixed()+
+  theme_bw()
+
+exs_ca_es %>%
+  mutate(diff = Age_es - Age) %>% 
+  ggplot()+
+  geom_point(aes(Age, diff, col = Sex))+
+  facet_grid(~ Region)+
+  geom_hline(yintercept = 0)+
+  labs(y = "Thanat age adjustment")+
+  theme_bw()
+
+exs_ca_ch %>%
+  ggplot()+
+  geom_line(aes(Age_ch, Age))+
+  facet_grid(~ Region)+
+  coord_fixed()+
+  theme_bw()
+
+exs_ca_ch %>%
+  mutate(diff = Age - Age_ch) %>% 
+  ggplot()+
+  geom_line(aes(Age, diff))+
+  facet_grid(~ Region)+
+  geom_hline(yintercept = 0)+
+  theme_bw()

@@ -5,7 +5,6 @@ library(tidyverse)
 library(rvest)
 library(lubridate)
 
-setwd("U:/nextcloud/Projects/COVID_19/COVerAge-DB/canada/statcan_pdf/")
 get_date <- function(x){
   x %>%
     str_split(pattern=" ") %>%
@@ -42,7 +41,7 @@ for (i in 1 : dim(timestamps)[1]){
     nodos <- html_nodes(all, xpath = '//*[@id="main"]/h1/a')
   }
   url_pdf <- html_attr(nodos, "href")
-  pdf_file <- paste0(timestamps$datetime[i], "_can.pdf")
+  pdf_file <- paste0("Data/pdfs_canada/", timestamps$datetime[i], "_can.pdf")
   download.file(url_pdf, pdf_file, mode = "wb", method = "libcurl")
 }
 

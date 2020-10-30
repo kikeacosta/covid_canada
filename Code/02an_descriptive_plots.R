@@ -92,7 +92,101 @@ db_can %>%
 
 ggsave("Figures/new_deaths_over_time_(censored).png")
 
+
+####################################################
+####################################################
+
+db_oth <- read_rds("Output/other_regions_all.rds")
+unique(db_oth$Region)
+
+db_oth2 <- db_oth %>% 
+  mutate(new_c_pcp = 1000000 * new_c / Exposure,
+         new_d_pcp = 1000000 * new_d / Exposure,
+         Cases_pcp = 1000000 * Cases / Exposure,
+         Deaths_pcp = 1000000 * Deaths / Exposure)
+
+
+# plotting cumulative cases 
+db_oth2 %>% 
+  filter(Date >= "2020-03-01") %>% 
+  drop_na(Cases) %>% 
+  ggplot()+
+  geom_line(aes(Date, Cases_pcp, col = Region), size = 0.7, alpha = 0.8)+
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
+  labs(title = "Cumulative cases over time (per million pop)")+
+  theme_bw()
+
+ggsave("Figures/cum_cases_over_time_ctrs.png")
+
+# plotting cumulative deaths
+db_oth2 %>% 
+  filter(Date >= "2020-03-01") %>% 
+  drop_na(Deaths) %>% 
+  ggplot()+
+  geom_line(aes(Date, Deaths_pcp, col = Region), size = 0.9, alpha = 0.8)+
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
+  labs(title = "Cumulative deaths over time (per million pop)")+
+  theme_bw()
+
+ggsave("Figures/cum_deaths_over_time_ctrs.png")
+
+# plotting new cases 
+db_oth2 %>% 
+  filter(Date >= "2020-03-01",
+         new_c_pcp < 5000) %>% 
+  drop_na(new_c) %>%
+  ggplot()+
+  geom_point(aes(Date, new_c_pcp, col = Region), size = 0.9, alpha = 0.8)+
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
+  labs(title = "New cases over time (per million pop)")+
+  theme_bw()
+
+ggsave("Figures/new_cases_over_time_ctrs.png")
+
+# plotting new cases (censored)
+db_oth2 %>% 
+  filter(Date >= "2020-03-01") %>% 
+  drop_na(new_c_pcp) %>% 
+  ggplot()+
+  geom_point(aes(Date, new_c, col = Region), size = 0.9, alpha = 0.8)+
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
+  scale_y_continuous(limits = c(0, 2000))+
+  labs(title = "New cases over time (per million pop) (censored at 2000)")+
+  theme_bw()
+
+ggsave("Figures/new_cases_over_time_(censored)_ctrs.png")
+
+# plotting new deaths
+db_oth2 %>% 
+  filter(Date >= "2020-03-01",
+         new_d_pcp >= 0 & new_d_pcp < 100) %>% 
+  drop_na(new_d_pcp) %>% 
+  ggplot()+
+  geom_point(aes(Date, new_d_pcp, col = Region), size = 0.9, alpha = 0.8)+
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
+  labs(title = "New deaths over time (per million pop)")+
+  theme_bw()
+
+ggsave("Figures/new_deaths_over_time_cts.png")
+
+# plotting new deaths (censored)
+db_oth2 %>% 
+  filter(Date >= "2020-03-01") %>% 
+  drop_na(new_d_pcp) %>% 
+  ggplot()+
+  geom_point(aes(Date, new_d_pcp, col = Region), size = 0.9, alpha = 0.8)+
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d")+
+  scale_y_continuous(limits = c(0, 20))+
+  labs(title = "New deaths over time (censored at 20)")+
+  theme_bw()
+
+ggsave("Figures/new_deaths_over_time_(censored).png")
+
+
+
+########################
 # plotting CFR over time
+########################
 db_can %>% 
   drop_na(CFR) %>% 
   filter(Date >= "2020-03-01",

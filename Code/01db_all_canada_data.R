@@ -280,4 +280,111 @@ unique(cts_sample$Code)
 unique(cts_sample$Region)
 unique(cts_sample$Sex)
 
+
+
+
+unique(db_can_tojoin$Sex)
+unique(db_can_tojoin$Age)
+
+unique(db_can$Sex)
+
+
+
+
+db_can_tojoin1 <- db_can %>% 
+  filter(Region == "All",
+         Sex == "b") %>% 
+  group_by(Region, Date) %>% 
+  summarise(Cases = sum(Cases),
+            Deaths = sum(Deaths)) %>%
+  ungroup() %>% 
+  mutate(Region = "Canada",
+         Code = "CA") %>% 
+  group_by(Region) %>% 
+  mutate(new_c = Cases - lag(Cases),
+         new_d = Deaths - lag(Deaths)) %>% 
+  ungroup() %>% 
+  drop_na()
+
+           
+db_cov4 <- db_cov3 %>% 
+  mutate(Region = case_when(Code == "BE" ~ "Belgium",
+                            Code == "DK" ~ "Denmark",
+                            Code == "DE_" ~ "Germany",
+                            Code == "ITbol" ~ "Italy",
+                            Code == "NL" ~ "Netherlands",
+                            Code == "SE" ~ "Sweden",
+                            Code == "US" ~ "USA",
+                            TRUE ~ Region)) %>% 
+  select(Region, Code, Date, Sex, Age, Cases, Deaths) %>% 
+  filter(Sex == "b") %>% 
+  group_by(Region, Code, Date) %>% 
+  summarise(Cases = sum(Cases),
+            Deaths = sum(Deaths)) %>% 
+  ungroup() %>% 
+  arrange(Region, Date) %>% 
+  group_by(Region) %>% 
+  mutate(new_c = Cases - lag(Cases),
+         new_d = Deaths - lag(Deaths)) %>% 
+  ungroup() %>% 
+  drop_na() %>% 
+  bind_rows(db_can_tojoin1)
+
+unique(db_cov4$Sex)  
+unique(db_cov4$Code)  
+
+library("HMDHFDplus")
+
+# Username of HMD
+hmd_name <- "kikepaila@gmail.com"
+# Password of HMD
+hmd_pass <- "secreto"
+
+
+country_list <- c("USA", "BEL", "SWE", "DNK", "DEUTNP", "NLD", "ITA", "CAN")
+country <- "USA"
+db_es <- NULL
+
+for (country in country_list) {
+  # Extracting data from HMD ####
+  # deaths 1x1 by country
+  # exposures 1x1 by country
+  db_e <- readHMDweb(CNTRY = country, 
+                     item = "Exposures_1x1", 
+                     username = hmd_name, 
+                     password = hmd_pass,
+                     fixup = TRUE) %>% 
+    as_tibble() %>% 
+    select(Year, Age, Total) %>% 
+    group_by() %>% 
+    filter(Year == max(Year)) %>% 
+    summarise(Exposure = sum(Total)) %>% 
+    mutate(Region = country) %>% 
+    ungroup()
+  db_es <- db_es %>% 
+    bind_rows(db_e)
+}
+
+
+db_es2 <- db_es %>% 
+  mutate(Region = case_when(Region == "BEL" ~ "Belgium",
+                            Region == "DNK" ~ "Denmark",
+                            Region == "DEUNTP" ~ "Germany",
+                            Region == "ITA" ~ "Italy",
+                            Region == "NLD" ~ "Netherlands",
+                            Region == "SWE" ~ "Sweden",
+                            Region == "USA" ~ "USA",
+                            Region == "CAN" ~ "Canada",
+                            TRUE ~ Region))
+
+
+db_cov5 <- db_cov4 %>% 
+  left_join(db_es2) %>% 
+  drop_na()
+
+unique(db_cov5$Region)
+
 write_rds(cts_sample, "Output/other_regions_by_age_sex.rds")
+write_rds(db_cov5, "Output/other_regions_all.rds")
+
+

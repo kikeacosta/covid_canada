@@ -74,7 +74,7 @@ db_infs2 %>%
   labs(title = "COVID cases and infections")+
   theme_bw()
 
-# ggsave("Figures/cases_infections.png")
+ggsave("Figures/cases_infections_sex.png")
 
 db_infs %>% 
   filter(Sex == "b") %>% 
@@ -86,7 +86,7 @@ db_infs %>%
   labs(title = "Underestimation of COVID infections")+
   theme_bw()
 
-# ggsave("Figures/underest_infections.png")
+ggsave("Figures/underest_infections.png")
 
 # by sexes
 db_infs2 %>% 
@@ -97,7 +97,7 @@ db_infs2 %>%
   labs(title = "COVID cases and infections")+
   theme_bw()
 
-# ggsave("Figures/cases_infections.png")
+ggsave("Figures/cases_infections_sex.png")
 
 db_infs %>% 
   filter(Sex != "b") %>% 
@@ -105,10 +105,11 @@ db_infs %>%
   geom_point(aes(Age, under, col = Sex))+
   facet_wrap(~ Region)+
   geom_hline(yintercept = 1)+
-  scale_y_log10(limits = c(0.05, 2))+
+  # scale_y_continuous(limits = c(0.05, 2))+
+  # scale_y_continuous(limits = c(0.05, 2))+
   labs(title = "Underestimation of COVID infections")+
   theme_bw()
 
-# ggsave("Figures/underest_infections.png")
+ggsave("Figures/underest_infections_sex.png")
 
 

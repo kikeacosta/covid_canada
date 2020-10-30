@@ -135,8 +135,11 @@ ifrs_ca_adj_vis %>%
   filter(Region == "All") %>% 
   ggplot()+
   geom_line(aes(Age, IFR, col = Source))+
-  scale_y_log10()
+  scale_y_log10()+
+  labs(title = "Age-specific IFR, Verity et al. vs Spain estimates")+
+  theme_bw()
 
+ggsave("Figures/ifrs_spain_vs_verity.png")
 
 # ggsave("Figures/age-spe_ifr_canada_china.png")
 # 

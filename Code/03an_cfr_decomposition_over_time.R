@@ -100,16 +100,16 @@ db <- db_can_oth
 
 cities <- c("Berlin", "Toronto", "NYC",  "Montreal")
 
-cts <- c("Alberta", 
-         "Canada", 
-         "Belgium", 
+cts <- c("Canada", 
          "British Columbia", 
+         "Alberta", 
+         "Ontario",
+         "Quebec",
+         "Belgium", 
          "Denmark", 
          "Germany", 
          "Italy", 
          "Netherlands", 
-         "Ontario",
-         "Quebec",
          "Sweden",
          "USA")
 

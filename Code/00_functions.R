@@ -2,6 +2,18 @@ Sys.setenv(LANG = "en")
 Sys.setlocale("LC_ALL","English")
 
 
+# smoothing
+spline_this <- function(xs, ys, l){
+  # smoothing remaining life exp
+  md <- smooth.spline(x = xs, y = ys, lambda = l)
+  res <- tibble(days = xs,
+                sm = exp(predict(md, xs)$y))
+  return(res)
+}
+
+
+
+
 # Kitagawa decomposition
 kita <- function(db, p1, p2, d){
   
@@ -41,13 +53,13 @@ kita <- function(db, p1, p2, d){
   cfrs_dec <- cfrs %>% 
     group_by() %>% 
     summarise(alpha = sum(d_C * a_CFR),
-              betha = sum(a_C * d_CFR)) %>%
+              beta = sum(a_C * d_CFR)) %>%
     ungroup() %>% 
-    mutate(diff = alpha + betha) %>% 
-    select(diff, alpha, betha)
+    mutate(diff = alpha + beta) %>% 
+    select(diff, alpha, beta)
   
   result <- bind_cols(vals2, cfrs_dec) %>% 
-    select(CFR1, CFR2, diff, alpha, betha)
+    select(CFR1, CFR2, diff, alpha, beta)
   
   return(result)
 }
@@ -91,13 +103,13 @@ kitagawa <- function(db, p1, p2, s){
   cfrs_dec <- cfrs %>% 
     group_by() %>% 
     summarise(alpha = sum(d_C * a_CFR),
-              betha = sum(a_C * d_CFR)) %>%
+              beta = sum(a_C * d_CFR)) %>%
     ungroup() %>% 
-    mutate(diff = alpha + betha) %>% 
-    select(diff, alpha, betha)
+    mutate(diff = alpha + beta) %>% 
+    select(diff, alpha, beta)
   
   result <- bind_cols(vals2, cfrs_dec) %>% 
-    select(CFR1, CFR2, diff, alpha, betha)
+    select(CFR1, CFR2, diff, alpha, beta)
   
   return(result)
 }
@@ -142,7 +154,7 @@ decomp <- function(p1, p2, d_exc){
     bind_cols(db_res)
   
   bd_res3 <- bd_res2 %>% 
-    select(Date, alpha, betha) %>% 
+    select(Date, alpha, beta) %>% 
     gather(-Date, key = "Component", value = "Value")
   
   diffs <- bd_res2 %>% 

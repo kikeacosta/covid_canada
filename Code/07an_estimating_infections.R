@@ -75,15 +75,15 @@ db_infs2 %>%
   theme_bw()
 
 ggsave("Figures/cases_infections_sex.png")
-
+library(scales)
 db_infs %>% 
   filter(Sex == "b") %>% 
   ggplot()+
   geom_point(aes(Age, under))+
   facet_wrap(~ Region)+
   geom_hline(yintercept = 1)+
-  scale_y_log10(limits = c(0.05, 2))+
-  labs(title = "Underestimation of COVID infections")+
+  scale_y_log10(limits = c(0.05, 2), breaks = c(0.1, 0.3, 1, 2), labels = percent_format(accuracy = 1L))+
+  labs(title = "Identified COVID infections")+
   theme_bw()
 
 ggsave("Figures/underest_infections.png")

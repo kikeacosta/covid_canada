@@ -41,135 +41,68 @@ dates_all <- db_can_age2 %>%
   unique() %>% 
   mutate(n = 1) %>% 
   spread(Region, n) %>% 
-  mutate(av = Alberta + BC + Montreal + Ontario + Quebec) %>% 
-  filter(av == 5)
-
-p1 <- "Quebec"
-p2 <- "Montreal"
-d_exc <- c(ymd("2020-04-23"), ymd("2020-04-28"), ymd("2020-04-29"))
-d_exc <- c(ymd("2020-04-23"))
-d_exc <- c(ymd("2020-04-28"), ymd("2020-04-29"))
-
-# decomp(p1, p2, d_exc)
+  mutate(av = Alberta + BC + Ontario + Quebec) %>% 
+  filter(av == 4)
 
 
-# CFR decomposition at one specific date
-########################################
+# Two dates to evaluate the evolution of CFR
 
-unique(db_oth$Region)
+d1 <- "2020-04-15"
+d2 <- "2020-07-09"
 
-# grouping both sexes in Canada and Ontario
-ca_b <- db_can_age %>% 
-  select(-new_c, -new_d) %>% 
-  filter(Date == "2020-07-09",
-         Code == "CA") %>% 
-  group_by(Region, Code, Date, Age) %>% 
-  summarise(Cases = sum(Cases),
-            Deaths = sum(Deaths)) %>% 
-  ungroup() %>% 
-  mutate(Sex = "b")
+c <- "Quebec"
 
-db_can_oth <- db_can_age %>% 
-  select(-new_c, -new_d) %>% 
-  filter(Date == "2020-07-09") %>% 
-  bind_rows(ca_b, db_oth) %>% 
-  mutate(Age = case_when(Age >= 80 ~ 80, 
-                         Age <= 10 ~ 0, 
-                         TRUE ~ Age)) %>% 
-  group_by(Region, Date, Sex, Age) %>% 
-  summarise(Cases = sum(Cases),
-            Deaths = sum(Deaths)) %>% 
-  ungroup() %>% 
-  group_by(Region, Date, Sex) %>% 
-  mutate(CFR = Deaths / Cases,
-         age_dist = Cases / sum(Cases),
-         Cases_t = sum(Cases),
-         Deaths_t = sum(Deaths),
-         CFR_t = Deaths_t / Cases_t) %>% 
-  ungroup() %>% 
-  mutate(Region = ifelse((Region == "Toronto" & Date == ymd("2020-10-24")), "Toronto_2", Region),
-         Region = ifelse(Region == "All", "Canada", Region))
+db_decomp <- NULL
+for(c in c("Alberta", "BC", "Montreal", "Ontario", "Quebec")){
 
-table(db_can_oth$Region, db_can_oth$Sex)
+db_d1 <- db_can_age2 %>% 
+  filter(Region == c) %>% 
+  filter(Date == d1)
 
-unique(db_can_oth$Region)
+db_d2 <- db_can_age2 %>% 
+  filter(Region == c) %>% 
+  filter(Date == d2)
 
+db_decomp <- apply_kitagawa(db_d1, db_d2) %>% 
+  mutate(Region = c,
+         Date1 = d1,
+         Date2 = d2) %>% 
+  select(Region, Date1, Date2, everything()) %>% 
+  bind_rows(db_decomp)
 
-p1 <- "Netherlands"
-db <- db_can_oth
-
-cities <- c("Berlin", "Toronto", "NYC",  "Montreal")
-
-cts <- c("Canada", 
-         "British Columbia", 
-         "Alberta", 
-         "Ontario",
-         "Quebec",
-         "Belgium", 
-         "Denmark", 
-         "Germany", 
-         "Italy", 
-         "Netherlands", 
-         "Sweden",
-         "USA")
-
-refs <- c("Canada", "Quebec", "Ontario")
-for(p1 in refs){
-  db_diffs_can <- NULL
-  for(p2 in cts){
-    db_diffs_can <- db_diffs_can %>% 
-      bind_rows(bind_cols(tibble(P1 = p1, P2 = p2), kitagawa(db_can_oth, p1, p2, s)))
-  }
-  
-  db_diffs_can2 <- db_diffs_can %>% 
-    gather(alpha, betha, key = "Component", value = Value) %>% 
-    filter(P2 != p1)
-  
-  db_diffs_can2 %>% 
-    ggplot()+
-    geom_bar(aes(reorder(P2, -diff), Value, fill = Component, col = Component), stat = "identity")+
-    geom_point(aes(reorder(P2, -diff), diff), col = "black", size = 2)+
-    geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    scale_y_continuous(limits = c(-0.1, 0.1))+
-    scale_color_manual(values = c("blue", "red"))+
-    scale_fill_manual(values = c("blue", "red"))+
-    labs(title = paste0("Decomposition of CFR, ", p1, " as reference"),
-         x = "Countries")+
-    theme_bw()+
-    coord_flip()+
-    theme(legend.position="bottom")
-  
-  ggsave(paste0("Figures/cfr_diff_reference_", p1, ".png"))
 }
 
-refs <- c("Montreal", "Toronto")
-for(p1 in refs){
-  db_diffs_can <- NULL
-  for(p2 in cities){
-    db_diffs_can <- db_diffs_can %>% 
-      bind_rows(bind_cols(tibble(P1 = p1, P2 = p2), kitagawa(db_can_oth, p1, p2, s)))
-  }
-  
-  db_diffs_can2 <- db_diffs_can %>% 
-    gather(alpha, betha, key = "Component", value = Value) %>% 
-    filter(P2 != p1)
-  
-  db_diffs_can2 %>% 
-    ggplot()+
-    geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    geom_bar(aes(reorder(P2, -diff), Value, fill = Component, col = Component), stat = "identity")+
-    geom_point(aes(reorder(P2, -diff), diff), col = "black", size = 2)+
-    scale_y_continuous(limits = c(-0.1, 0.1))+
-    geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    scale_color_manual(values = c("blue", "red"))+
-    scale_fill_manual(values = c("blue", "red"))+
-    labs(title = paste0("Decomposition of CFR, ", p1, " as reference"),
-         x = "Cities")+
-    theme_bw()+
-    coord_flip()+
-    theme(legend.position="bottom")
-  
-  ggsave(paste0("Figures/cfr_diff_reference_", p1, ".png"))
-}
+db_decomp2 <- db_decomp %>% 
+  gather(alpha, beta, key = "Component", value = Value) %>% 
+  mutate(Region2 = paste0(Region, " (", round(CFR1, 3), " - ", round(CFR2, 3), ")"))
+
+# cfr_ref <- db_diffs_can2 %>% pull(CFR1) %>% unique() %>% round(., 3)
+tx <- 8
+db_decomp2 %>% 
+  ggplot()+
+  geom_bar(aes(Region2, Value, fill = Component, col = Component), stat = "identity", alpha = 0.5)+
+  geom_point(aes(Region2, diff), col = "black", size = 2)+
+  geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
+  scale_y_continuous(limits = c(-0.1, 0.1))+
+  scale_color_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
+  scale_fill_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
+  labs(title = paste0("Decomposition of CFR change between April 15 and July 9"),
+       x = "Province",
+       y = "CFR difference")+
+  theme_bw()+
+  coord_flip()+
+  theme(
+    legend.position="bottom",
+    legend.title = element_text(size = tx),
+    legend.text = element_text(size = tx - 1),
+    legend.key.size = unit(0.5,"line"),
+    plot.title = element_text(size = tx + 1),
+    axis.text.x = element_text(size = tx),
+    axis.text.y = element_text(size = tx),
+    axis.title.x = element_text(size = tx + 1),
+    axis.title.y = element_text(size = tx + 1)
+  )
+
+ggsave("Figures/cfr_time_diff.png", width = 5, height = 2)
 
 

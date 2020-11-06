@@ -11,10 +11,8 @@ spline_this <- function(xs, ys, l){
   return(res)
 }
 
-
-
-
 # Kitagawa decomposition
+########################
 kita <- function(db, p1, p2, d){
   
   vals1 <- db %>% 
@@ -64,6 +62,8 @@ kita <- function(db, p1, p2, d){
   return(result)
 }
 
+# Kitagawa decomposition v2
+###########################
 
 kitagawa <- function(db, p1, p2, s){
   two <- db %>% 
@@ -115,10 +115,69 @@ kitagawa <- function(db, p1, p2, s){
 }
 
 
+# kitagawa function generalizable
+##################################
+
+apply_kitagawa <- function(db_d1, db_d2){
+  vals <- tibble(CFR1 = db_d1 %>% 
+                   pull(CFR_t) %>% 
+                   unique(),
+                 CFR2 = db_d2 %>% 
+                   pull(CFR_t) %>% 
+                   unique())
+  
+  cfr1 <- db_d1 %>% 
+    select(Age, age_dist, CFR) %>% 
+    rename(C1 = age_dist, 
+           CFR1 = CFR)
+  
+  cfr2 <- db_d2 %>% 
+    select(Age, age_dist, CFR) %>% 
+    rename(C2 = age_dist, 
+           CFR2 = CFR)
+  
+  cfrs <- left_join(cfr1, cfr2) %>% 
+    mutate(d_C = C2 - C1,
+           d_CFR = CFR2 - CFR1,
+           a_C = (C2 + C1) * 0.5,
+           a_CFR = (CFR2 + CFR1) * 0.5)
+  
+  # decomposed into age and fatality component
+  cfrs_dec <- cfrs %>% 
+    group_by() %>% 
+    summarise(alpha = sum(d_C * a_CFR),
+              beta = sum(a_C * d_CFR)) %>%
+    ungroup() %>% 
+    mutate(diff = alpha + beta) %>% 
+    select(diff, alpha, beta)
+  
+  result <- bind_cols(vals, cfrs_dec) %>% 
+    select(CFR1, CFR2, diff, alpha, beta)
+  
+  return(result)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 # decomposing CFR differences between populations over time
+###########################################################
+
 decomp <- function(p1, p2, d_exc){
   
   # p1 <- "Quebec"

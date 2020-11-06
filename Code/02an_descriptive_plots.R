@@ -200,6 +200,60 @@ db_can %>%
 
 ggsave("Figures/all_CFR_over_time.png")
 
+
+
+cfrs <- db_can %>% 
+  drop_na(CFR) %>% 
+  filter(Date >= "2020-03-01",
+         Sex == "b",
+         CFR < 1)
+  
+col_country <- c("Alberta" = "#666666",
+                 "All" = "black",
+                 "British Columbia" = "#1b9e77", 
+                 # "Manitoba" = "#d95f02", 
+                 # "New Brunswick" = "#66a61e", 
+                 "Montreal" = "#e7298a", 
+                 "Quebec" = "#1E8FCC",
+                 # "Saskatchewan" = "#e7298a",
+                 "Ontario" = "#a6761d") 
+
+
+labs <- cfrs %>%
+  group_by(Region) %>% 
+  filter(Date == max(Date)) %>% 
+  mutate(Date = Date + 3)
+tx <- 8
+
+cfrs %>%
+  ggplot(aes(Date, CFR, col = Region))+
+  geom_point(size = .5, alpha = .8) +
+  geom_vline(xintercept = ymd(c("2020-04-15")), size = .5, alpha = 0.5)+
+  geom_vline(xintercept = ymd(c("2020-07-09")), size = .5, alpha = 0.5)+
+  scale_y_continuous(labels = percent_format(accuracy = 1L)) +
+  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
+  theme_bw()+
+  geom_text_repel(data = labs,
+                  aes(Date, CFR, label = Region), size = 2, segment.color = NA, 
+                  nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
+  scale_colour_manual(values = col_country)+
+  labs(x = "Date",
+       y = "%",
+       title = "CFR over time")+
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position = "none",
+    plot.margin = margin(5,5,5,5,"mm"),
+    plot.title = element_text(size=tx),
+    axis.text.x = element_text(size=tx-1),
+    axis.text.y = element_text(size=tx-1),
+    axis.title.x = element_text(size=tx),
+    axis.title.y = element_text(size=tx)
+  )
+
+ggsave("Figures/all_CFR_over_time_provinces.png", width = 5, height = 2.4)
+
+
 db_can %>% 
   drop_na(Deaths, Cases) %>% 
   filter(Date >= "2020-03-01",

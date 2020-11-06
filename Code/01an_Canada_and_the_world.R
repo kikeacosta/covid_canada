@@ -105,13 +105,22 @@ for(c in ctrs){
 
 }
 
-db2 %>%
-  filter(country == "Sweden") %>% 
+# splines vs rolling average
+############################
+library(zoo)
+db_ra <- db2 %>% 
+  group_by(country) %>% 
+  mutate(ra = rollapply(new_d_pcp, 7, mean, align = 'right', fill = NA)) %>% 
+  ungroup()
+  
+db_ra %>%
+  filter(country == "Canada") %>% 
   ggplot()+
   geom_line(aes(date, new_d_pcp_sm)) +
+  geom_line(aes(date, ra), col = "red") +
   geom_point(aes(date, new_d_pcp))
   
-
+#############################
 
 unique(db2$country)
 
@@ -122,8 +131,7 @@ col_country <- c("Belgium" = "#666666",
                  "Netherlands" = "#66a61e", 
                  "Sweden" = "#e6ab02", 
                  "US" = "#1E8FCC",
-                 "Italy" = "#e7298a", 
-                 "Germany" = "#a6761d") 
+                 "Germany" = "#e7298a") 
 
 d_x <- 0
 d_xend <- max(db2$date) - 5
@@ -141,7 +149,7 @@ labs <- db2 %>%
 
 db2 %>%
   ggplot(aes(date, new_c_pcp_sm, col = country))+
-  geom_line(size = .9, alpha = .8) +
+  geom_line(size = .7, alpha = .8) +
   scale_y_log10(expand = expansion(add = c(0,0.1))) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
@@ -163,7 +171,7 @@ db2 %>%
     axis.title.y = element_text(size=tx)
   )
 
-ggsave("Figures/new_cases_world.png", width = 5, height = 2.6)
+ggsave("Figures/new_cases_world.png", width = 5, height = 2.4)
 
 labs <- db2 %>%
   group_by(country) %>% 
@@ -172,7 +180,7 @@ labs <- db2 %>%
 
 db2 %>%
   ggplot(aes(date, new_d_pcp_sm, col = country))+
-  geom_line(size = .9, alpha = .8) +
+  geom_line(size = .7, alpha = .8) +
   scale_y_log10(expand = expansion(add = c(0,0.1))) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
@@ -194,10 +202,11 @@ db2 %>%
     axis.title.y = element_text(size=tx)
   )
 
-ggsave("Figures/new_deaths_world.png", width = 5, height = 2.6)
+ggsave("Figures/new_deaths_world.png", width = 5, height = 2.4)
 
-db_t <- read_csv("Data/owid-covid-data.csv",
+db_t <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv",
                   col_types = cols(.default = "c")) 
+
 
 ctrs <- c("Belgium", 
           "Canada", 
@@ -261,7 +270,7 @@ labs <- db_t3 %>%
 
 db_t3 %>%
   ggplot(aes(date, pos_sm, col = country))+
-  geom_line(size = .9, alpha = .8) +
+  geom_line(size = .7, alpha = .8) +
   scale_y_log10(expand = expansion(add = c(0,0.1)), labels = percent_format(accuracy = 0.1L)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
@@ -283,4 +292,48 @@ db_t3 %>%
     axis.title.y = element_text(size=tx)
   )
 
-ggsave("Figures/pos_rate_world.png", width = 5, height = 2.6)
+ggsave("Figures/pos_rate_world.png", width = 5, height = 2.4)
+
+
+# CFR over time
+###############
+
+cfrs <- corona_cases %>%
+  left_join(corona_deaths) %>% 
+  left_join(pop) %>% 
+  filter(country %in% ctrs,
+         deaths > 1) %>% 
+  mutate(cfr = deaths / cases) %>% 
+  drop_na()
+
+labs <- cfrs %>%
+  group_by(country) %>% 
+  filter(date == max(date)) %>% 
+  mutate(date = date + 3)
+
+cfrs %>%
+  ggplot(aes(date, cfr, col = country))+
+  geom_line(size = .7, alpha = .8) +
+  # scale_y_log10(expand = expansion(add = c(0,0.1)), labels = percent_format(accuracy = 0.1L)) +
+  scale_y_continuous(labels = percent_format(accuracy = 1L)) +
+  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
+  theme_bw()+
+  geom_text_repel(data = labs,
+                  aes(date, cfr, label = country), size = 2, segment.color = NA, 
+                  nudge_y = 0, nudge_x = 0, hjust = 0, force = 2.5, direction = "y", fontface = "bold") +
+  scale_colour_manual(values = col_country)+
+  labs(x = "Date",
+       y = "%",
+       title = "CFR over time")+
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position = "none",
+    plot.margin = margin(5,5,5,5,"mm"),
+    plot.title = element_text(size=tx),
+    axis.text.x = element_text(size=tx-1),
+    axis.text.y = element_text(size=tx-1),
+    axis.title.x = element_text(size=tx),
+    axis.title.y = element_text(size=tx)
+  )
+
+ggsave("Figures/all_CFR_world.png", width = 5, height = 2.4)

@@ -64,19 +64,19 @@ db <- db_can_oth
 cities <- c("Berlin", "Toronto", "NYC",  "Montreal")
 
 cts <- c("Canada", 
-         "Alberta",
-         "British Columbia",
-         "Ontario",
-         "Quebec")
-         # "Belgium", 
-         # "Denmark", 
-         # "Germany", 
-         # "Italy", 
-         # "Netherlands", 
-         # "Sweden",
-         # "USA")
+         # "Alberta",
+         # "British Columbia",
+         # "Ontario",
+         # "Quebec",
+         "Belgium",
+         "Denmark",
+         "Germany",
+         "Italy",
+         "Netherlands",
+         "Sweden",
+         "USA")
 
-refs <- c("Canada", "Quebec", "Ontario", "Alberta", "British Columbia")
+refs <- c("Canada")
 for(p1 in refs){
   db_diffs_can <- NULL
   for(p2 in cts){
@@ -116,7 +116,7 @@ for(p1 in refs){
       axis.title.y = element_text(size = tx + 1)
     )
   
-  ggsave(paste0("Figures/cfr_diff_reference_", p1, "2.png"), width = 5, height = 2)
+  ggsave(paste0("Figures/cfr_diff_reference_", p1, "1.png"), width = 5, height = 3)
 }
 
 refs <- c("Montreal", "Toronto")

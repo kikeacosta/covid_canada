@@ -41,10 +41,16 @@ db_cov %>%
 db_prv <- db_cov %>% 
   filter(Country == "Canada") %>% 
   mutate(Code = str_replace(Code, Date, ""),
-         Code = ifelse(Code == "CA_QC ", "CA_QC", Code),
          Date = dmy(Date)) %>% 
-  filter(Code %in% c("CA_AB", "CA_BC", "CA_MTL", "CA_ON", "CA_QC")) %>% 
   select(-Tests)
+
+# common dates for all regions
+comm_dates <- db_prv %>% 
+  drop_na() %>% 
+  select(Region, Date) %>% 
+  unique() %>% 
+  mutate(id = 1) %>% 
+  spread(Region, id)
 
 unique(db_prv$Region)
 unique(db_prv$Code)

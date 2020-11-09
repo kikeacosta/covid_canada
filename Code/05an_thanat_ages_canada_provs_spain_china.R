@@ -74,7 +74,14 @@ db_ex_es_f <- read_delim("Data/fltper_1x1.txt", delim = " ", skip = 1) %>%
   select(Year, Age, ex) %>% 
   mutate(Sex = "f")
 
-db_ex_es <- bind_rows(db_ex_es_m, db_ex_es_f) %>% 
+db_ex_es_b <- read_delim("Data/bltper_1x1.txt", delim = " ", skip = 1) %>% 
+  rename(Year = 1,
+         Age = 2,
+         ex = 10) %>% 
+  select(Year, Age, ex) %>% 
+  mutate(Sex = "b")
+
+db_ex_es <- bind_rows(db_ex_es_m, db_ex_es_f, db_ex_es_b) %>% 
   mutate(Year = as.numeric(Year),
          Age = str_trim((Age)),
          Age = ifelse(Age == "110+", 110, as.integer(Age)),
@@ -202,3 +209,4 @@ exs_ca_ch %>%
   facet_grid(~ Region)+
   geom_hline(yintercept = 0)+
   theme_bw()
+

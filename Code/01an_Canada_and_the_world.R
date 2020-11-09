@@ -91,11 +91,11 @@ for(c in ctrs){
            
   xs <- temp %>% filter(deaths > min_d) %>% pull(days)
   ys <- temp %>% filter(deaths > min_d) %>% pull(new_d_pcp) %>% log()
-  db_d_sm <- spline_this(xs, ys, 0.00001) %>% mutate(country = c) %>% rename(new_d_pcp_sm = sm)
+  db_d_sm <- spline_this(xs, ys, 0.00001) %>% mutate(country = c, sm = exp(sm)) %>% rename(new_d_pcp_sm = sm)
   
   xs <- temp %>% filter(cases > min_c) %>% pull(days)
   ys <- temp %>% filter(cases > min_c) %>% pull(new_c_pcp) %>% log()
-  db_c_sm <- spline_this(xs, ys, 0.00001) %>% mutate(country = c) %>% rename(new_c_pcp_sm = sm)
+  db_c_sm <- spline_this(xs, ys, 0.00001) %>% mutate(country = c, sm = exp(sm)) %>% rename(new_c_pcp_sm = sm)
   
   temp2 <- temp %>% 
     left_join(db_d_sm) %>% 
@@ -110,15 +110,15 @@ for(c in ctrs){
 library(zoo)
 db_ra <- db2 %>% 
   group_by(country) %>% 
-  mutate(ra = rollapply(new_d_pcp, 7, mean, align = 'right', fill = NA)) %>% 
+  mutate(ra = rollapply(new_c_pcp, 7, mean, align = 'right', fill = NA)) %>% 
   ungroup()
   
 db_ra %>%
-  filter(country == "Canada") %>% 
+  filter(country == "Belgium") %>% 
   ggplot()+
-  geom_line(aes(date, new_d_pcp_sm)) +
+  geom_line(aes(date, new_c_pcp_sm)) +
   geom_line(aes(date, ra), col = "red") +
-  geom_point(aes(date, new_d_pcp))
+  geom_point(aes(date, new_c_pcp))
   
 #############################
 
@@ -149,26 +149,26 @@ labs <- db2 %>%
 
 db2 %>%
   ggplot(aes(date, new_c_pcp_sm, col = country))+
-  geom_line(size = .7, alpha = .8) +
-  scale_y_log10(expand = expansion(add = c(0,0.1))) +
+  geom_line(size = .5, alpha = .9) +
+  scale_y_continuous(limits = c(0, 1500)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   geom_text_repel(data = labs,
-                  aes(date, new_c_pcp_sm, label = country), size = 2, segment.color = NA, 
+                  aes(date, new_c_pcp_sm, label = country), size = 1.5, segment.color = NA, 
                   nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
   labs(x = "Date",
-       y = "COVID-19 cases per million (log scale)",
-       title = "Reported COVID-19 cases per million people")+
+       y = "COVID-19 cases per million",
+       title = "Reported daily new COVID-19 cases per million people")+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
     plot.margin = margin(5,5,5,5,"mm"),
-    plot.title = element_text(size=tx),
-    axis.text.x = element_text(size=tx-1),
-    axis.text.y = element_text(size=tx-1),
-    axis.title.x = element_text(size=tx),
-    axis.title.y = element_text(size=tx)
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_text(size=tx-3),
+    axis.text.y = element_text(size=tx-3),
+    axis.title.x = element_text(size=tx-1),
+    axis.title.y = element_text(size=tx-1)
   )
 
 ggsave("Figures/new_cases_world.png", width = 5, height = 2.4)
@@ -180,26 +180,26 @@ labs <- db2 %>%
 
 db2 %>%
   ggplot(aes(date, new_d_pcp_sm, col = country))+
-  geom_line(size = .7, alpha = .8) +
-  scale_y_log10(expand = expansion(add = c(0,0.1))) +
+  geom_line(size = .5, alpha = .9) +
+  scale_y_continuous(limits = c(0, 30)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   geom_text_repel(data = labs,
-                  aes(date, new_d_pcp_sm, label = country), size = 2, segment.color = NA, 
+                  aes(date, new_d_pcp_sm, label = country), size = 1.5, segment.color = NA, 
                   nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
   labs(x = "Date",
-       y = "COVID-19 deaths per million (log scale)",
-       title = "Reported COVID-19 deaths per million people")+
+       y = "COVID-19 deaths per million",
+       title = "Reported daily new COVID-19 deaths per million people")+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
     plot.margin = margin(5,5,5,5,"mm"),
-    plot.title = element_text(size=tx),
-    axis.text.x = element_text(size=tx-1),
-    axis.text.y = element_text(size=tx-1),
-    axis.title.x = element_text(size=tx),
-    axis.title.y = element_text(size=tx)
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_text(size=tx-3),
+    axis.text.y = element_text(size=tx-3),
+    axis.title.x = element_text(size=tx-1),
+    axis.title.y = element_text(size=tx-1)
   )
 
 ggsave("Figures/new_deaths_world.png", width = 5, height = 2.4)
@@ -270,26 +270,26 @@ labs <- db_t3 %>%
 
 db_t3 %>%
   ggplot(aes(date, pos_sm, col = country))+
-  geom_line(size = .7, alpha = .8) +
-  scale_y_log10(expand = expansion(add = c(0,0.1)), labels = percent_format(accuracy = 0.1L)) +
+  geom_line(size = .5, alpha = .9) +
+  scale_y_continuous(labels = percent_format(accuracy = 1L)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   geom_text_repel(data = labs,
-                  aes(date, pos_sm, label = country), size = 2, segment.color = NA, 
+                  aes(date, pos_sm, label = country), size = 1.5, segment.color = NA, 
                   nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
   labs(x = "Date",
-       y = "% (log scale)",
-       title = "Positive rate of COVID-19 tests")+
+       y = "%",
+       title = "Daily positive rate of COVID-19 tests")+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
     plot.margin = margin(5,5,5,5,"mm"),
-    plot.title = element_text(size=tx),
-    axis.text.x = element_text(size=tx-1),
-    axis.text.y = element_text(size=tx-1),
-    axis.title.x = element_text(size=tx),
-    axis.title.y = element_text(size=tx)
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_text(size=tx-3),
+    axis.text.y = element_text(size=tx-3),
+    axis.title.x = element_text(size=tx-1),
+    axis.title.y = element_text(size=tx-1)
   )
 
 ggsave("Figures/pos_rate_world.png", width = 5, height = 2.4)
@@ -313,27 +313,26 @@ labs <- cfrs %>%
 
 cfrs %>%
   ggplot(aes(date, cfr, col = country))+
-  geom_line(size = .7, alpha = .8) +
-  # scale_y_log10(expand = expansion(add = c(0,0.1)), labels = percent_format(accuracy = 0.1L)) +
+  geom_line(size = .5, alpha = .9) +
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   geom_text_repel(data = labs,
-                  aes(date, cfr, label = country), size = 2, segment.color = NA, 
-                  nudge_y = 0, nudge_x = 0, hjust = 0, force = 2.5, direction = "y", fontface = "bold") +
+                  aes(date, cfr, label = country), size = 1.5, segment.color = NA, 
+                  nudge_y = 0, nudge_x = 0, hjust = 0, force = 1.5, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
   labs(x = "Date",
        y = "%",
-       title = "CFR over time")+
+       title = "Cumulative CFR over time")+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
     plot.margin = margin(5,5,5,5,"mm"),
-    plot.title = element_text(size=tx),
-    axis.text.x = element_text(size=tx-1),
-    axis.text.y = element_text(size=tx-1),
-    axis.title.x = element_text(size=tx),
-    axis.title.y = element_text(size=tx)
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_text(size=tx-3),
+    axis.text.y = element_text(size=tx-3),
+    axis.title.x = element_text(size=tx-1),
+    axis.title.y = element_text(size=tx-1)
   )
 
 ggsave("Figures/all_CFR_world.png", width = 5, height = 2.4)

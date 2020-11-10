@@ -160,8 +160,9 @@ extract_death4 <- function(j){
 # str_split(deaths[pos_c + 1], "\\s{1,}")[[1]][5]
 i <- 100
 all2 <- NULL
-for(i in 51:163){
-  
+# for(i in 51:163){
+for(i in 51:185){
+    
   if(i < 94) l <- 6
   if(i >= 94) l <- 8
   
@@ -294,13 +295,21 @@ library(googledrive)
 drive_auth(email = email)
 gs4_auth(email = email)
 
-write_sheet(db_final,
-            ss = 'https://docs.google.com/spreadsheets/d/1awgAawvZLUFHO0KzJ_ntMtHR68UcuJoMpc9kVLUhJd8/edit#gid=0',
-            sheet = "database")
-
+# replacing all data
+#####################
+# write_sheet(db_final,
+#             ss = 'https://docs.google.com/spreadsheets/d/1awgAawvZLUFHO0KzJ_ntMtHR68UcuJoMpc9kVLUhJd8/edit#gid=0',
+#             sheet = "database")
+# 
 
 # setwd("U:/gits/covid_canada")
 # write_rds(db_final, "Data/201029_covid_canada.rds")
+
+# appending data
+################
+# sheet_append(db_final,
+#             ss = 'https://docs.google.com/spreadsheets/d/1awgAawvZLUFHO0KzJ_ntMtHR68UcuJoMpc9kVLUhJd8/edit#gid=0',
+#             sheet = "database")
 
 
 # some visual verifications

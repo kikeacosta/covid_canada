@@ -5,6 +5,8 @@ Sys.setlocale("LC_ALL","English")
 library(tidyverse)
 library(lubridate)
 library(ggplot2)
+library(ggrepel)
+library(scales)
 
 # reading Canada data
 db_can <- read_rds("Output/canada_cases_deaths.rds")
@@ -208,16 +210,22 @@ cfrs <- db_can %>%
          Sex == "b",
          CFR < 1)
   
-col_country <- c("Alberta" = "#666666",
+col_country <- c("Alberta" = "#66a61e",
                  "All" = "black",
-                 "British Columbia" = "#1b9e77", 
-                 # "Manitoba" = "#d95f02", 
-                 # "New Brunswick" = "#66a61e", 
-                 "Montreal" = "#e7298a", 
+                 "British Columbia" = "#d95f02", 
+                 "Montreal" = "#1b9e77",
                  "Quebec" = "#1E8FCC",
-                 # "Saskatchewan" = "#e7298a",
-                 "Ontario" = "#a6761d") 
+                 "Ontario" = "#e7298a") 
 
+# 
+# col_country <- c("Other Prairies" = "#666666",
+#                  "Canada" = "black",
+#                  "Alberta" = "#66a61e",
+#                  "Atlantic" = "#e6ab02",
+#                  "British Columbia" = "#d95f02", 
+#                  "Territories" = "#1b9e77",
+#                  "Quebec" = "#1E8FCC",
+#                  "Ontario" = "#e7298a") 
 
 labs <- cfrs %>%
   group_by(Region) %>% 
@@ -227,14 +235,15 @@ tx <- 8
 
 cfrs %>%
   ggplot(aes(Date, CFR, col = Region))+
-  geom_point(size = .5, alpha = .8) +
+  geom_point(size = .5, alpha = .9) +
   geom_vline(xintercept = ymd(c("2020-04-15")), size = .5, alpha = 0.5)+
-  geom_vline(xintercept = ymd(c("2020-07-09")), size = .5, alpha = 0.5)+
+  geom_vline(xintercept = ymd(c("2020-07-16")), size = .5, alpha = 0.5)+
+  geom_vline(xintercept = ymd(c("2020-10-15")), size = .5, alpha = 0.5)+
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   geom_text_repel(data = labs,
-                  aes(Date, CFR, label = Region), size = 2, segment.color = NA, 
+                  aes(Date, CFR, label = Region), size = 1.7, segment.color = NA, 
                   nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
   labs(x = "Date",
@@ -244,11 +253,11 @@ cfrs %>%
     panel.grid.minor = element_blank(),
     legend.position = "none",
     plot.margin = margin(5,5,5,5,"mm"),
-    plot.title = element_text(size=tx),
-    axis.text.x = element_text(size=tx-1),
-    axis.text.y = element_text(size=tx-1),
-    axis.title.x = element_text(size=tx),
-    axis.title.y = element_text(size=tx)
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_text(size=tx-3),
+    axis.text.y = element_text(size=tx-3),
+    axis.title.x = element_text(size=tx-1),
+    axis.title.y = element_text(size=tx-1)
   )
 
 ggsave("Figures/all_CFR_over_time_provinces.png", width = 5, height = 2.4)

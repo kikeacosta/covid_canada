@@ -7,7 +7,7 @@ spline_this <- function(xs, ys, l){
   # smoothing remaining life exp
   md <- smooth.spline(x = xs, y = ys, lambda = l)
   res <- tibble(days = xs,
-                sm = exp(predict(md, xs)$y))
+                sm = predict(md, xs)$y)
   return(res)
 }
 

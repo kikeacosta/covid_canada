@@ -42,7 +42,8 @@ db_prv <- db_cov %>%
   filter(Country == "Canada") %>% 
   mutate(Code = str_replace(Code, Date, ""),
          Date = dmy(Date)) %>% 
-  select(-Tests)
+  select(-Tests) %>% 
+  filter(Region != "All")
 
 # common dates for all regions
 comm_dates <- db_prv %>% 
@@ -84,8 +85,8 @@ db_can <- bind_rows(db_prv_all, db_nal_all)
 ##########################
 # temporal adjustments 
 # exclusion of Mtl last dates, which have wrong data
-db_can <- db_can %>% 
-  filter(!(Region == "Montreal" & Date >= "2020-10-09"))
+# db_can <- db_can %>% 
+#   filter(!(Region == "Montreal" & Date >= "2020-10-09"))
 
 # adjustment of BC deaths which are mutiplied by 100
 db_can <- db_can %>% 
@@ -163,8 +164,8 @@ db_prv_age <- db_prv_age %>%
   filter(!(Region == "Quebec" & Date %in% ymd(c("2020-05-16", "2020-05-23"))))
 
 # exclusion of Mtl last dates, which have wrong data
-db_prv_age <- db_prv_age %>% 
-  filter(!(Region == "Montreal" & Date >= "2020-10-09"))
+# db_prv_age <- db_prv_age %>% 
+#   filter(!(Region == "Montreal" & Date >= "2020-10-09"))
 
 # adjustment of BC deaths which are mutiplied by 100
 # db_can <- db_can %>% 
@@ -192,11 +193,8 @@ db_can_age3 <- db_can_age2 %>%
 write_rds(db_can_age3, "Output/cfr_by_age_sex.rds")
 
 
-
-
-
 #######################################
-# Other countries and cities to compare
+# Other countries and cities to compare ------------------------------
 #######################################
 
 # Toronto
@@ -286,16 +284,10 @@ unique(cts_sample$Code)
 unique(cts_sample$Region)
 unique(cts_sample$Sex)
 
-
-
-
 unique(db_can_tojoin$Sex)
 unique(db_can_tojoin$Age)
 
 unique(db_can$Sex)
-
-
-
 
 db_can_tojoin1 <- db_can %>% 
   filter(Region == "All",

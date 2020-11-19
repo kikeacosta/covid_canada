@@ -415,7 +415,7 @@ fit_baseline <- function(db2) {
                  boot_pi(base, db_bline, db2, 2000, 0.95))
   }, error=function(e){ skip_to_next <<- TRUE})
   
-  # if(skip_to_next) { next } 
+  # if(skip_to_next) { next }
   
   return(db3)
 }

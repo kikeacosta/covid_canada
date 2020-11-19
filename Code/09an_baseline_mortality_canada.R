@@ -90,6 +90,9 @@ cts <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec", "Quebec_i
 db_all_blns <- NULL
 skip_to_next <- F
 
+# c <- "Quebec"
+
+
 for (c in cts) {
   temp1 <- db2 %>% 
     filter(Region == c)
@@ -121,7 +124,7 @@ for (c in cts) {
         ggsave(paste0("Figures/baseline_singles/", c, "_", s, "_", a, "_", ym, ".png"), dpi = 300, width = 6, height = 4)
       
       db_all_blns <- db_all_blns %>% 
-        bind_rows(temp2)
+        bind_rows(temp3)
     }
   }
 }

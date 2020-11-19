@@ -2,7 +2,22 @@ Sys.setenv(LANG = "en")
 Sys.setlocale("LC_ALL","English")
 
 
+# weekly population interpolation
+#################################
+
+interpop <- function(db){
+  ys <- db %>% pull(t)
+  ps <- db %>% pull(Exposure)
+  ws <- seq(1, 574, 1)
+  # cubic interpolation
+  md2 <- splinefun(x = ys, y = ps, method="fmm",  ties = mean)
+  inter_pop <- tibble(t = ws,
+                      Exposure = md2(ws))
+  return(inter_pop)
+}
+
 # smoothing
+###########
 spline_this <- function(xs, ys, l){
   # smoothing remaining life exp
   md <- smooth.spline(x = xs, y = ys, lambda = l)
@@ -290,7 +305,7 @@ boot_pi <- function(model, odata, pdata, n, p) {
     rpois(length(bpred), lambda = bpred)
   }
   boot_ci <- t(apply(boot_y, 2, quantile, c(lp, up)))
-  return(data.frame(pred = predict(model, newdata = pdata, type = "response"), 
+  return(data.frame(Baseline = predict(model, newdata = pdata, type = "response"), 
                     lp = boot_ci[, 1], 
                     up = boot_ci[, 2]))
 }
@@ -400,28 +415,7 @@ fit_baseline <- function(db2, exc_type) {
   
   if(skip_to_next) { next } 
   
-  db4 <- db3 %>% 
-    mutate(excess = Deaths - pred,
-           exc_reg_pi = ifelse(Deaths > up, 1, 0)) %>% 
-    dplyr::select(Region, Date, everything())
-  
   # write_csv(db4, path = paste0("Output/excess_singles/", c, "_", s, "_", a, "_baseline_", ym, "_", exc_type, ".csv"))
   
-  db4 %>%
-    ggplot()+
-    geom_line(aes(Date, Deaths))+
-    geom_ribbon(aes(Date, ymin = lp, ymax = up), fill = "#2ca25f", alpha = 0.3)+
-    geom_line(aes(Date, pred), col = "#2ca25f", alpha = 0.9)+
-    labs(title=paste0(c, "_", s, "_", a))+
-    theme_bw()+
-    theme(
-      panel.grid.minor = element_blank(),
-      plot.title = element_text(size=13),
-      axis.text.x = element_text(size=10),
-      axis.text.y = element_text(size=10),
-      axis.title.x = element_text(size=11),
-      axis.title.y = element_text(size=11))+
-    ggsave(paste0("Figures/excess_singles/", c, "_", s, "_", a, "_", ym, "_", exc_type, ".png"), dpi = 300, width = 6, height = 4)
-  
-  return(db4)
+  return(db3)
 }

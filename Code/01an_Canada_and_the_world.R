@@ -245,7 +245,8 @@ for(c in ctrs){
   xs <- temp %>% pull(days)
   ys <- temp %>% pull(pos) %>% log()
   db_pos_sm <- spline_this(xs, ys, 0.0000001) %>% 
-    mutate(country = c) %>% 
+    mutate(country = c,
+           sm = exp(sm)) %>% 
     rename(pos_sm = sm)
   
   temp2 <- temp %>% 

@@ -69,7 +69,7 @@ db_deaths2 %>%
   filter(Sex == "b") %>% 
   ggplot()+
   geom_point(aes(Region, Ratio))+
-  scale_y_log10(limits = c(0.1, 10), breaks = c(0.1, 0.2, 0.5, 1, 2, 5, 10))+
+  scale_y_log10(limits = c(0.5, 5), breaks = c(0.1, 0.2, 0.5, 0.75, 1, 2, 3, 4, 5, 10))+
   geom_hline(yintercept = 1, linetype = "dashed")+
   labs(title = "Ratio Excess/Identified COVID-19 deaths all ages",
        x = "Province")+
@@ -85,7 +85,7 @@ db_deaths2 %>%
     axis.title.y = element_text(size=tx-1)
   )
 
-ggsave("Figures/deaths_covid_vs_excess_ratio_all.png", width = 5, height = 2)
+ggsave("Figures/deaths_covid_vs_excess_ratio_all_zoom.png", width = 5, height = 2)
 
 #########
 # by age
@@ -196,6 +196,7 @@ db_d_age2 %>%
   geom_point(aes(Age, Ratio, col = Region))+
   geom_hline(yintercept = 1, linetype = "dashed")+
   scale_y_log10(breaks = c(0.2, 0.5, 0.75, 1, 2, 5, 10, 20, 100, 200))+
+  scale_y_log10(breaks = c(0.2, 0.5, 0.75, 1, 2, 5, 10, 20, 100, 200), limits = c(0.2, 5))+
   # scale_x_continuous(breaks = seq(0, 100, 10))+
   scale_colour_manual(values = col_country)+
   labs(title = "Ratio Excess/Identified COVID-19 mortality by age")+

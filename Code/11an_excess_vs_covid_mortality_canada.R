@@ -41,10 +41,13 @@ db_can_all <- db_can2 %>%
   summarise(Deaths = sum(Deaths)) %>% 
   ungroup() %>% 
   mutate(Source = "Diagnosed",
-         Region = ifelse(Region == "All", "Canada", Region)) %>% 
-  drop_na()
+         Region = ifelse(Region == "All", "Canada", Region))
 
-db_deaths <- bind_rows(db_can_all, db_exc_all)
+isq <- db_can_all %>% 
+  filter(Region == "Quebec") %>% 
+  mutate(Region = "Quebec_isq")
+
+db_deaths <- bind_rows(db_can_all, isq, db_exc_all)
 
 db_deaths %>% 
   ggplot()+
@@ -110,16 +113,33 @@ db_can_age <- db_can2 %>%
          Age = as.character(Age)) %>% 
   drop_na()
 
-db_d_age <- bind_rows(db_can_age, db_exc_age) %>% 
-  mutate(Age = case_when(Age == "0" ~ "0-44",
-                         Age == "45" ~ "45-64",
-                         Age == "65" ~ "65-84",
-                         Age == "85" ~ "85+"))
+db_isq_age <- db_can2 %>% 
+  select(Region, Sex, Age, Deaths) %>% 
+  filter(Region == "Quebec") %>% 
+  mutate(Age = case_when(Age < 49 ~ 0,
+                         Age >= 50 & Age < 69 ~ 50,
+                         Age >= 70 ~ 70)) %>% 
+  group_by(Region, Sex, Age) %>% 
+  summarise(Deaths = sum(Deaths))%>% 
+  ungroup() %>% 
+  mutate(Source = "Diagnosed",
+         Region = "Quebec_isq",
+         Age = as.character(Age)) %>% 
+  drop_na()
+
+db_d_age <- bind_rows(db_can_age, db_exc_age, db_isq_age) %>% 
+  mutate(Age = case_when(Region != "Quebec_isq" & Age == "0" ~ "0-44",
+                         Region != "Quebec_isq" & Age == "45" ~ "45-64",
+                         Region != "Quebec_isq" & Age == "65" ~ "65-84",
+                         Region != "Quebec_isq" & Age == "85" ~ "85+",
+                         Region == "Quebec_isq" & Age == "0" ~ "0-49",
+                         Region == "Quebec_isq" & Age == "50" ~ "50-69",
+                         Region == "Quebec_isq" & Age == "70" ~ "70+"))
 
 db_d_age %>% 
   filter(Sex == "b") %>% 
   ggplot()+
-  geom_point(aes(Age, Deaths, col = Source))+
+  geom_jitter(aes(Age, Deaths, col = Source), width = 0.1, height = NULL)+
   facet_wrap(~ Region, scales = "free", ncol = 1)+
   scale_color_manual(values = c("red", "black"))+
   labs(title = "Identified vs Excess mortality by age",
@@ -137,7 +157,7 @@ db_d_age2 %>%
   ggplot()+
   geom_point(aes(Age, Ratio))+
   geom_hline(yintercept = 1, linetype = "dashed")+
-  scale_y_log10(breaks = c(0.2, 0.5, 0.8, 1, 1.5, 2, 5, 10, 20, 100, 200))+
+  scale_y_log10(breaks = c(0.2, 0.5, 0.8, 1, 1.5, 2, 4, 8, 20, 100, 200))+
   facet_wrap(~ Region, scales = "free", ncol = 3)+
   labs(title = "Ratio Excess/Identified COVID-19 mortality by age",
        x = "Age")+
@@ -166,7 +186,7 @@ col_country <- c("Other Prairies" = "#666666",
                  "Alberta" = "#66a61e",
                  "Atlantic" = "#e6ab02",
                  "British Columbia" = "#d95f02", 
-                 "Territories" = "#1b9e77",
+                 "Quebec_isq" = "#666666",
                  "Quebec" = "#1E8FCC",
                  "Ontario" = "#e7298a") 
 

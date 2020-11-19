@@ -10,9 +10,10 @@ library(readxl)
 ym <- 2010
 exc_type <- "long_flu" 
 
-db_baseline <- read_csv(paste0("Output/baseline_mortality_", ym, "_", exc_type, ".csv")) 
+db_baseline <- read_csv(paste0("Output/baseline_mortality_", ym, ".csv"),
+                        col_types = cols(Age = col_character()))
 
-# excess mortality by age since the begining of the pandemic in Canada, 
+# excess mortality by age since the beginning of the pandemic in Canada, 
 # February 22 (week 8),until the end of the first wave, July 4 (week 27)
 first_week <- 8
 last_week <- 27
@@ -20,17 +21,14 @@ last_week_ont <- 27
 weeks <- last_week - first_week + 1
 weeks_ont <- last_week_ont - first_week + 1
 
-levels_provs <- c("British Columbia", "Alberta", "Ontario", "Quebec", "Canada")
+levels_provs <- c("British Columbia", "Alberta", "Ontario", "Quebec", "Quebec_isq", "Canada")
 
 db_exc <- db_baseline %>% 
-  rename(Baseline = pred) %>% 
-  replace_na(list(Age = "All")) %>% 
   filter(Year == 2020,
          Week >= first_week & Week <= last_week,
          !(Region == "Ontario" & Week >= last_week_ont)) %>% 
   select(Region, Sex, Age, Date, Week, Deaths, Exposure, Baseline, lp, up) %>% 
-  mutate(Age = as.character(Age),
-         Region = factor(Region, levels = levels_provs),
+  mutate(Region = factor(Region, levels = levels_provs),
          Out_intvls = ifelse(Deaths > up | Deaths < lp, 1, 0),
          # Baseline = ifelse(Baseline > Deaths, Deaths, Baseline),
          Baseline2 = ifelse(Baseline > Deaths, Deaths, Baseline),
@@ -42,7 +40,7 @@ db_exc <- db_baseline %>%
 
 db_exc2 <- db_exc %>%  
   group_by(Region, Sex, Age) %>% 
-  summarise(Exposure = max(Exposure),
+  summarise(Exposure = mean(Exposure),
             Deaths = sum(Deaths),
             Baseline = sum(Baseline),
             Baseline2 = sum(Baseline2),
@@ -62,14 +60,14 @@ db_exc2 <- db_exc %>%
 db_exc2 %>% 
   ggplot()+
   geom_point(aes(Age, p_score, col = Sex))+
-  facet_grid(~ Region)+
+  facet_grid(~ Region, scales="free_x")+
   geom_hline(yintercept = 0)+
   theme_bw()
 
 db_exc2 %>% 
   ggplot()+
   geom_point(aes(Age, p_score_pos, col = Sex))+
-  facet_grid(~ Region)+
+  facet_grid(~ Region, scales="free_x")+
   geom_hline(yintercept = 0)+
   labs(y = "%")+
   theme_bw()
@@ -77,7 +75,7 @@ db_exc2 %>%
 db_exc2 %>% 
   ggplot()+
   geom_point(aes(Age, Excess_pos, col = Sex))+
-  facet_grid(~ Region)+
+  facet_grid(~ Region, scales="free_x")+
   geom_hline(yintercept = 0)+
   labs(y = "Excess (counts)")+
   theme_bw()
@@ -85,7 +83,7 @@ db_exc2 %>%
 db_exc2 %>% 
   ggplot()+
   geom_point(aes(Age, Excess_rate, col = Sex))+
-  facet_grid(~ Region)+
+  facet_grid(~ Region, scales="free_x")+
   geom_hline(yintercept = 0)+
   scale_y_log10()+
   labs(y = "Excess (Rates / 100K)")+

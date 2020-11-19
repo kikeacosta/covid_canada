@@ -10,13 +10,20 @@ source("Code/00_functions.R")
 # reading mortality and population data from StatCan files
 deaths <- read_csv("Data/201113_13100768-eng.zip",
                    col_types = cols(.default = "c"))
+
+qc <- read_csv2("Data/DecesSemaine_QC_2010-2020_GrAge.csv",
+                skip = 5) %>% 
+  rename(Year = 1,
+         Age = 3) %>% 
+  drop_na(Age) %>% 
+  select(-Statut)
+
 pop <- read_csv("Data/17100005-eng.zip",
                 col_types = cols(.default = "c"))
 
 
 # adjusting mortality data
 ###########################
-
 deaths2 <- deaths %>% 
   rename(Region = GEO,
          Date = REF_DATE,
@@ -49,6 +56,29 @@ deaths2 %>%
   geom_line(aes(Date, Deaths))
 
 
+weeks <- deaths2 %>% 
+  filter(Region == r,
+         Age == a,
+         Sex == "b") %>% 
+  select(Date) %>%
+  mutate(Year = year(Date)) %>% 
+  group_by(Year) %>% 
+  mutate(Week = 1:n())
+
+# Quebec data
+qc2 <- qc %>% 
+  gather(-Year, -Age, key = "Week", value = "Deaths") %>% 
+  mutate(Age = str_sub(Age, 1, 2),
+         Age = case_when(Age == "0-" ~ "0",
+                         Age == "To" ~ "All",
+                         TRUE ~ Age),
+         Deaths = as.integer(str_replace(Deaths, " ", "")),
+         Year = as.integer(Year),
+         Week = as.integer(Week),
+         Region = "Quebec_isq",
+         Sex = "b") %>% 
+  arrange(Age, Year, Week)
+
 
 # adjusting population data
 ###########################
@@ -71,9 +101,11 @@ pop2 <- pop %>%
          Age = ifelse(Age == "All ages", "All", Age),
          Sex = case_when(Sex == "Both sexes" ~ "b",
                          Sex == "Males" ~ "m",
-                         Sex == "Females" ~ "f"))
+                         Sex == "Females" ~ "f"),
+         Exposure = as.integer(Exposure),
+         Year = as.integer(Year))
 
-
+# population by age for Canada data
 pop3 <- pop2 %>% 
   filter(Age != "All") %>% 
   mutate(Age_gr = case_when(Age <= 44 ~ "0",
@@ -86,6 +118,7 @@ pop3 <- pop2 %>%
   rename(Age = Age_gr) %>% 
   bind_rows(pop2 %>% 
               filter(Age == "All"))
+
 
 unique(pop3$Age)
 unique(pop3$Region)
@@ -100,8 +133,25 @@ pop3 %>%
   ggplot()+
   geom_line(aes(Year, Exposure))
 
+
+# population by age for Quebec data
+
+pop4 <- pop2 %>% 
+  filter(Age != "All") %>% 
+  mutate(Age_gr = case_when(Age <= 49 ~ "0",
+                            Age >= 50 & Age <= 69 ~ "50",
+                            Age >= 70 ~ "70")) %>% 
+  group_by(Region, Year, Sex, Age_gr) %>% 
+  summarise(Exposure = sum(Exposure)) %>% 
+  ungroup() %>% 
+  rename(Age = Age_gr) %>% 
+  bind_rows(pop2 %>% 
+              filter(Age == "All"))
+
 db_canada <- deaths2 %>% 
   left_join(pop3)
+
+
 
 write_rds(db_canada, "Output/weekly_canada.rds")
 

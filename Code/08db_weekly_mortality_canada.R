@@ -8,8 +8,10 @@ library(readxl)
 source("Code/00_functions.R")
 
 # reading mortality and population data from StatCan files
-deaths <- read_csv(unzip("Data/13100768-eng.zip", "13100768.csv"))
-pop <- read_csv(unzip("Data/17100005-eng.zip", "17100005.csv"))
+deaths <- read_csv("Data/201113_13100768-eng.zip",
+                   col_types = cols(.default = "c"))
+pop <- read_csv("Data/17100005-eng.zip",
+                col_types = cols(.default = "c"))
 
 
 # adjusting mortality data
@@ -22,19 +24,21 @@ deaths2 <- deaths %>%
          Deaths = VALUE) %>% 
   select(Region, Date, Age, Sex, Deaths) %>% 
   mutate(Region = str_remove(Region, ", place of occurrence"),
+         Date = ymd(Date),
          Age = str_remove(Age, "Age at time of death, "),
          Age = str_trim(str_sub(Age, 1, 2)),
          Age = ifelse(Age == "al", "All", Age),
          Sex = case_when(Sex == "Both sexes" ~ "b",
                          Sex == "Males" ~ "m",
                          Sex == "Females" ~ "f"),
-         Year = year(Date))
+         Year = year(Date),
+         Deaths = as.integer(Deaths))
 
 
 unique(deaths2$Age)
 unique(deaths2$Region)
 
-r <- "Alberta"
+r <- "Quebec"
 a <- "85"
 
 deaths2 %>% 

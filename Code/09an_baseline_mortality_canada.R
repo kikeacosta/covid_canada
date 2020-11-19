@@ -41,14 +41,6 @@ ym <- 2010
 # database for baseline estimation
 ##################################
 db2 <- db %>% 
-  mutate(Deaths = Deaths + 1) %>%
-  group_by(Year, Region, Age, Sex) %>% 
-  mutate(Week = 1:n()) %>% 
-  ungroup() %>% 
-  arrange(Region, Age, Sex, Year) %>% 
-  group_by(Region, Age, Sex) %>% 
-  mutate(t = 1:n()) %>% 
-  ungroup() %>% 
   mutate(sn52 = sin((2*pi*t)/(52)),
          cs52 = cos((2*pi*t)/(52)),
          # excluding winter (wks 46-14), summer (wks 27-35), 2009 and COVID-19 pandemics
@@ -60,39 +52,74 @@ db2 <- db %>%
 
 # Testing single populations
 ############################
-# c <- "Quebec"
-# s <- "m"
-# a <- "All"
-# 
-# temp <- db2 %>%
-#   filter(Region == c,
-#          Sex == s,
-#          Age == a,
-#          Year >= ym)
-# 
-# fit_baseline(temp)
+c <- "Quebec_isq"
+s <- "b"
+a <- "0"
 
+temp <- db2 %>%
+  filter(Region == c,
+         Sex == s,
+         Age == a,
+         Year >= ym)
+
+test <- fit_baseline(temp)
+
+test %>%
+  ggplot()+
+  geom_line(aes(Date, Deaths))+
+  geom_ribbon(aes(Date, ymin = lp, ymax = up), fill = "#01BAEF", alpha = 0.25)+
+  geom_line(aes(Date, Baseline), col = "#01BAEF", alpha = 0.9, size = 0.6)+
+  scale_x_date(date_breaks = "1 year", date_minor_breaks = "1 year", date_labels = "%Y")+
+  labs(title=paste0(c, "_", s, "_", a))+
+  theme_bw()+
+  theme(
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size=13),
+    axis.text.x = element_text(size=10),
+    axis.text.y = element_text(size=10),
+    axis.title.x = element_text(size=11),
+    axis.title.y = element_text(size=11))
 
 # Fitting all regions, sexes, and ages in Canada
 ################################################
 cts <- unique(db2$Region)
 cts <- c("Canada", "Ontario", "Quebec")
-cts <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec")
+cts <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec", "Quebec_isq")
+cts <- c("Canada", "Quebec_isq")
 sxs <- unique(db2$Sex)
-ags <- unique(db2$Age)
 
 db_all_blns <- NULL
 
 for (c in cts) {
+  temp1 <- db2 %>% 
+    filter(Region == c)
+  sxs <- unique(temp1$Sex)
+  ags <- unique(temp1$Age)
   for (s in sxs) {
     for (a in ags) {
-      temp <- db2 %>% 
-        filter(Region == c,
-               Sex == s,
-               Age == a,
-               Year >= ym)
+      temp2 <- temp1 %>% 
+        filter(Sex == s,
+               Age == a)
       cat(paste(c, s, a, "\n", sep = "_"))
-      temp2 <- fit_baseline(temp, exc_type)
+      temp3 <- fit_baseline(temp, exc_type)
+      
+      temp3 %>%
+        ggplot()+
+        geom_line(aes(Date, Deaths))+
+        geom_ribbon(aes(Date, ymin = lp, ymax = up), fill = "#01BAEF", alpha = 0.25)+
+        geom_line(aes(Date, Baseline), col = "#01BAEF", alpha = 0.9, size = 0.6)+
+        scale_x_date(date_breaks = "1 year", date_minor_breaks = "1 year", date_labels = "%Y")+
+        labs(title=paste0(c, "_", s, "_", a))+
+        theme_bw()+
+        theme(
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(size=13),
+          axis.text.x = element_text(size=10),
+          axis.text.y = element_text(size=10),
+          axis.title.x = element_text(size=11),
+          axis.title.y = element_text(size=11))+
+        ggsave(paste0("Figures/baseline_singles/", c, "_", s, "_", a, "_", ym, ".png"), dpi = 300, width = 6, height = 4)
+      
       db_all_blns <- db_all_blns %>% 
         bind_rows(temp2)
     }

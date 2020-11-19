@@ -15,7 +15,7 @@ pkgs <- c("tidyverse",
 
 lapply(pkgs, require, character.only = T)
 select <- dplyr::select
-registerDoParallel(cores = 4)
+registerDoParallel(cores = 40)
 source("Code/00_functions.R")
 
 
@@ -30,9 +30,9 @@ exc_type <- "emomo"
 flu_season <- c(seq(1, 14, 1), seq(46, 54, 1))
 heat_waves <- seq(27, 35, 1)
 # option 2 definition
-exc_type <- "long_flu" 
-flu_season <- c(seq(1, 18, 1), seq(42, 54, 1))
-heat_waves <- 0
+# exc_type <- "long_flu" 
+# flu_season <- c(seq(1, 18, 1), seq(42, 54, 1))
+# heat_waves <- 0
   
 # Initial year for baseline estimation
 ######################################
@@ -52,43 +52,43 @@ db2 <- db %>%
 
 # Testing single populations
 ############################
-c <- "Quebec_isq"
-s <- "b"
-a <- "0"
-
-temp <- db2 %>%
-  filter(Region == c,
-         Sex == s,
-         Age == a,
-         Year >= ym)
-
-test <- fit_baseline(temp)
-
-test %>%
-  ggplot()+
-  geom_line(aes(Date, Deaths))+
-  geom_ribbon(aes(Date, ymin = lp, ymax = up), fill = "#01BAEF", alpha = 0.25)+
-  geom_line(aes(Date, Baseline), col = "#01BAEF", alpha = 0.9, size = 0.6)+
-  scale_x_date(date_breaks = "1 year", date_minor_breaks = "1 year", date_labels = "%Y")+
-  labs(title=paste0(c, "_", s, "_", a))+
-  theme_bw()+
-  theme(
-    panel.grid.minor = element_blank(),
-    plot.title = element_text(size=13),
-    axis.text.x = element_text(size=10),
-    axis.text.y = element_text(size=10),
-    axis.title.x = element_text(size=11),
-    axis.title.y = element_text(size=11))
+# c <- "Quebec_isq"
+# s <- "b"
+# a <- "0"
+# 
+# temp <- db2 %>%
+#   filter(Region == c,
+#          Sex == s,
+#          Age == a,
+#          Year >= ym)
+# 
+# test <- fit_baseline(temp)
+# 
+# test %>%
+#   ggplot()+
+#   geom_line(aes(Date, Deaths))+
+#   geom_ribbon(aes(Date, ymin = lp, ymax = up), fill = "#01BAEF", alpha = 0.25)+
+#   geom_line(aes(Date, Baseline), col = "#01BAEF", alpha = 0.9, size = 0.6)+
+#   scale_x_date(date_breaks = "1 year", date_minor_breaks = "1 year", date_labels = "%Y")+
+#   labs(title=paste0(c, "_", s, "_", a))+
+#   theme_bw()+
+#   theme(
+#     panel.grid.minor = element_blank(),
+#     plot.title = element_text(size=13),
+#     axis.text.x = element_text(size=10),
+#     axis.text.y = element_text(size=10),
+#     axis.title.x = element_text(size=11),
+#     axis.title.y = element_text(size=11))
 
 # Fitting all regions, sexes, and ages in Canada
 ################################################
 cts <- unique(db2$Region)
-cts <- c("Canada", "Ontario", "Quebec")
-cts <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec", "Quebec_isq")
 cts <- c("Canada", "Quebec_isq")
-sxs <- unique(db2$Sex)
+cts <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec", "Quebec_isq")
+# cts <- c("Canada", "Quebec_isq")
 
 db_all_blns <- NULL
+skip_to_next <- F
 
 for (c in cts) {
   temp1 <- db2 %>% 
@@ -101,7 +101,7 @@ for (c in cts) {
         filter(Sex == s,
                Age == a)
       cat(paste(c, s, a, "\n", sep = "_"))
-      temp3 <- fit_baseline(temp, exc_type)
+      temp3 <- fit_baseline(temp2)
       
       temp3 %>%
         ggplot()+
@@ -126,6 +126,6 @@ for (c in cts) {
   }
 }
 
-write_csv(db_all_blns, path = paste0("Output/baseline_mortality_", ym, "_", exc_type, ".csv"))
+write_csv(db_all_blns, path = paste0("Output/baseline_mortality_", ym, ".csv"))
 detach(package:MASS)
 

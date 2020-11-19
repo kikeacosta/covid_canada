@@ -319,7 +319,9 @@ boot_pi <- function(model, odata, pdata, n, p) {
 # sx <- "b"
 # ag <- 80
 # ymin <- 2014
-fit_baseline <- function(db2, exc_type) {
+# db2 <- temp2
+
+fit_baseline <- function(db2) {
   
   skip_to_next <- F
   
@@ -413,9 +415,7 @@ fit_baseline <- function(db2, exc_type) {
                  boot_pi(base, db_bline, db2, 2000, 0.95))
   }, error=function(e){ skip_to_next <<- TRUE})
   
-  if(skip_to_next) { next } 
-  
-  # write_csv(db4, path = paste0("Output/excess_singles/", c, "_", s, "_", a, "_baseline_", ym, "_", exc_type, ".csv"))
+  # if(skip_to_next) { next } 
   
   return(db3)
 }

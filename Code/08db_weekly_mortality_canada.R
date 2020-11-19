@@ -1,7 +1,7 @@
 rm(list=ls())
 Sys.setenv(LANG = "en")
 Sys.setlocale("LC_ALL","English")
-
+detach(package:MASS)
 library(tidyverse)
 library(lubridate)
 library(readxl)
@@ -40,12 +40,12 @@ deaths2 <- deaths %>%
          Sex = case_when(Sex == "Both sexes" ~ "b",
                          Sex == "Males" ~ "m",
                          Sex == "Females" ~ "f"),
-         Year = year(Date),
          Deaths = as.integer(Deaths))
 
 
 unique(deaths2$Age)
 unique(deaths2$Region)
+table(deaths2$Region)
 
 r <- "Quebec"
 a <- "85"
@@ -95,10 +95,10 @@ qc2 <- qc %>%
          Sex = "b") %>% 
   arrange(Age, Year, Week) %>% 
   drop_na() %>% 
-  left_join(weeks2)
+  left_join(weeks2, by = c("Year", "Week"))
 
 deaths3 <- deaths2 %>% 
-  left_join(weeks2)
+  left_join(weeks2, by = c("Date"))
 
 deaths_all <- bind_rows(deaths3, qc2)
 
@@ -166,7 +166,7 @@ for(r in rgs){
 
 unique(inters_pop$Region)
 unique(pop2$Region)
-
+table(inters_pop$Region)
 # Visual test
 #############
 

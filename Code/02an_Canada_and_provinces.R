@@ -114,18 +114,18 @@ for(c in ctrs){
 
 # # splines vs rolling average
 # ############################
-# library(zoo)
-# db_ra <- db2 %>% 
-#   group_by(province) %>% 
-#   mutate(ra = rollapply(new_d_pcp, 7, mean, align = 'right', fill = NA)) %>% 
-#   ungroup()
-# 
-# db_ra %>%
-#   filter(province == "Ontario") %>% 
-#   ggplot()+
-#   geom_line(aes(date, new_d_pcp_sm)) +
-#   geom_line(aes(date, ra), col = "red") +
-#   geom_point(aes(date, new_d_pcp))
+library(zoo)
+db_ra <- db2 %>%
+  group_by(province) %>%
+  mutate(ra = rollapply(new_c_pcp, 7, mean, align = 'right', fill = NA)) %>%
+  ungroup()
+
+db_ra %>%
+  filter(province == "Ontario") %>%
+  ggplot()+
+  geom_line(aes(date, new_c_pcp_sm)) +
+  geom_line(aes(date, ra), col = "red") +
+  geom_point(aes(date, new_c_pcp))
 # 
 # #############################
 
@@ -306,7 +306,7 @@ db_t5 %>%
   geom_line(aes(date, pos, col = province))
 
 pos_terr <- db_t2 %>% 
-  filter(province == "Territories") %>% 
+  filter(province == "Quebec") %>% 
   drop_na() %>% 
   filter(n_c > 0,
          n_t >0) %>% 

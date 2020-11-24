@@ -6,7 +6,13 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 library(osfr)
+library(scales)
+
 # source("Code/00_functions.R")
+unique(db_m_age3$Region)
+levs <- c("Canada", "Alberta", "British Columbia", "Ontario", "Quebec", "Quebec_isq")
+
+
 
 db_exc <- read_csv("Output/excess_weeks_8_27.csv")
 
@@ -20,13 +26,15 @@ db_can <-  read_csv("Data/Output_5.zip",
 
 db_exc_all <- db_exc %>% 
   filter(Age != "All") %>% 
-  select(Region, Sex, Excess_pos) %>% 
-  rename(Deaths = Excess_pos) %>% 
+  select(Region, Sex, Excess_epi, epi_lp, epi_up) %>% 
+  # rename(Deaths = Excess_epi) %>% 
   group_by(Region, Sex) %>% 
-  summarise(Deaths = sum(Deaths)) %>% 
+  summarise(Excess = sum(Excess_epi),
+            lp = sum(epi_lp),
+            up = sum(epi_up)) %>% 
   ungroup() %>% 
-  mutate(Source = "Excess")
-
+  gather(Excess, lp, up, key = "Source", value = "Deaths")
+  
 # looking for regions included in COVerAGE-DB
 db_can2 <- db_can %>% 
   filter(Country == "Canada") %>% 
@@ -47,13 +55,14 @@ isq <- db_can_all %>%
   filter(Region == "Quebec") %>% 
   mutate(Region = "Quebec_isq")
 
-db_deaths <- bind_rows(db_can_all, isq, db_exc_all)
+db_deaths <- bind_rows(db_can_all, isq, db_exc_all) %>% 
+  mutate(Region = factor(Region, levels = levs))
 
 db_deaths %>% 
   ggplot()+
   geom_point(aes(Sex, Deaths, col = Source))+
   facet_wrap(~ Region, scales = "free")+
-  scale_color_manual(values = c("red", "black"))+
+  scale_color_manual(values = c("red", "black", "grey", "grey"))+
   labs(title = "Identified vs Excess mortality",
        x = "Sex")+
   theme_bw()
@@ -63,13 +72,17 @@ ggsave("Figures/deaths_covid_vs_excess.png")
 db_deaths2 <- db_deaths %>% 
   spread(Source, Deaths) %>% 
   drop_na() %>% 
-  mutate(Ratio = Excess / Diagnosed)
+  mutate(Ratio = Excess / Diagnosed,
+         up = up / Diagnosed,
+         lp = lp / Diagnosed)
+
 tx <- 8
 db_deaths2 %>% 
   filter(Sex == "b") %>% 
-  ggplot()+
-  geom_point(aes(Region, Ratio))+
-  scale_y_log10(limits = c(0.5, 5), breaks = c(0.1, 0.2, 0.5, 0.75, 1, 2, 3, 4, 5, 10))+
+  ggplot(aes(Region, Ratio))+
+  geom_point()+
+  geom_errorbar(aes(ymin = lp, ymax = up), colour = "black", width = .1)+
+  scale_y_log10(breaks = c(0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 4, 8))+
   geom_hline(yintercept = 1, linetype = "dashed")+
   labs(title = "Ratio Excess/Identified COVID-19 deaths all ages",
        x = "Province")+
@@ -85,7 +98,7 @@ db_deaths2 %>%
     axis.title.y = element_text(size=tx-1)
   )
 
-ggsave("Figures/deaths_covid_vs_excess_ratio_all_zoom.png", width = 5, height = 2)
+ggsave("Figures/deaths_covid_vs_excess_ratio_all_conf_ints.png", width = 5, height = 2)
 
 #########
 # by age
@@ -93,11 +106,14 @@ ggsave("Figures/deaths_covid_vs_excess_ratio_all_zoom.png", width = 5, height = 
 
 db_exc_age <- db_exc %>% 
   filter(Age != "All") %>% 
-  select(Region, Sex, Age, Excess_pos) %>% 
-  rename(Deaths = Excess_pos) %>% 
-  mutate(Source = "Excess")
+  select(Region, Sex, Age, Excess_epi, epi_lp, epi_up) %>% 
+  rename(Excess = Excess_epi,
+         lp = epi_lp,
+         up = epi_up) %>% 
+  gather(Excess, lp, up, key = "Source", value = "Deaths")
 
 unique(db_exc_age$Age)
+unique(db_exc_age$Region)
 
 db_can_age <- db_can2 %>% 
   select(Region, Sex, Age, Deaths) %>% 
@@ -134,14 +150,15 @@ db_d_age <- bind_rows(db_can_age, db_exc_age, db_isq_age) %>%
                          Region != "Quebec_isq" & Age == "85" ~ "85+",
                          Region == "Quebec_isq" & Age == "0" ~ "0-49",
                          Region == "Quebec_isq" & Age == "50" ~ "50-69",
-                         Region == "Quebec_isq" & Age == "70" ~ "70+"))
+                         Region == "Quebec_isq" & Age == "70" ~ "70+"),
+         Region = factor(Region, levels = levs))
 
 db_d_age %>% 
   filter(Sex == "b") %>% 
-  ggplot()+
-  geom_jitter(aes(Age, Deaths, col = Source), width = 0.1, height = NULL)+
+  ggplot(aes(Age, Deaths))+
+  geom_jitter(aes(col = Source), width = 0.1, height = NULL)+
   facet_wrap(~ Region, scales = "free", ncol = 1)+
-  scale_color_manual(values = c("red", "black"))+
+  scale_color_manual(values = c("red", "black", "grey", "grey"))+
   labs(title = "Identified vs Excess mortality by age",
        x = "Age")+
   theme_bw()
@@ -150,14 +167,17 @@ ggsave("Figures/deaths_covid_vs_excess_age.png")
 
 db_d_age2 <- db_d_age %>% 
   spread(Source, Deaths) %>% 
-  mutate(Ratio = Excess / Diagnosed)
+  mutate(Ratio = Excess / Diagnosed,
+         up = up / Diagnosed,
+         lp = lp / Diagnosed)
 
 db_d_age2 %>% 
   filter(Sex == "b") %>% 
-  ggplot()+
-  geom_point(aes(Age, Ratio))+
+  ggplot(aes(Age, Ratio))+
+  geom_point(alpha = 0.8)+
+  geom_errorbar(aes(ymin = lp, ymax = up), colour = "black", width = .1)+
   geom_hline(yintercept = 1, linetype = "dashed")+
-  scale_y_log10(breaks = c(0.2, 0.5, 0.8, 1, 1.5, 2, 4, 8, 20, 100, 200))+
+  scale_y_log10(breaks = c(0.2, 0.5, 1, 2, 4, 8, 20, 50, 100, 200))+
   facet_wrap(~ Region, scales = "free", ncol = 3)+
   labs(title = "Ratio Excess/Identified COVID-19 mortality by age",
        x = "Age")+
@@ -178,36 +198,94 @@ db_d_age2 %>%
                                     linetype="solid")
   )
 
-ggsave("Figures/deaths_covid_vs_excess_ratio_age.png", width = 5, height = 4.5)
+ggsave("Figures/deaths_covid_vs_excess_ratio_age_conf_int.png", width = 5, height = 4.5)
+
+# 
+# col_country <- c("Other Prairies" = "#666666",
+#                  "Canada" = "black",
+#                  "Alberta" = "#66a61e",
+#                  "Atlantic" = "#e6ab02",
+#                  "British Columbia" = "#d95f02", 
+#                  "Quebec_isq" = "#666666",
+#                  "Quebec" = "#1E8FCC",
+#                  "Ontario" = "#e7298a") 
+# 
+# db_d_age2 %>% 
+#   filter(Sex == "b") %>% 
+#   ggplot()+
+#   geom_point(aes(Age, Ratio, col = Region))+
+#   geom_hline(yintercept = 1, linetype = "dashed")+
+#   scale_y_log10(breaks = c(0.2, 0.5, 0.75, 1, 2, 5, 10, 20, 100, 200))+
+#   scale_y_log10(breaks = c(0.2, 0.5, 0.75, 1, 2, 5, 10, 20, 100, 200), limits = c(0.2, 5))+
+#   # scale_x_continuous(breaks = seq(0, 100, 10))+
+#   scale_colour_manual(values = col_country)+
+#   labs(title = "Ratio Excess/Identified COVID-19 mortality by age")+
+#   theme_bw()+
+#   theme(
+#     panel.grid.minor = element_blank(),
+#     plot.margin = margin(5,5,5,5,"mm"),
+#     plot.title = element_text(size=tx-1),
+#     legend.text=element_text(size=tx-2),
+#     legend.title=element_text(size=tx-1),
+#     axis.text.x = element_text(size=tx),
+#     axis.text.y = element_text(size=tx-2),
+#     axis.title.x = element_text(size=tx-1),
+#     axis.title.y = element_text(size=tx-1),
+#     strip.text.x = element_text(size = 8),
+#     strip.background = element_rect(color = "black", 
+#                                     fill = "transparent", 
+#                                     size = 0.3, 
+#                                     linetype="solid")
+#   )
+# 
+# ggsave("Figures/deaths_covid_vs_excess_ratio_age_v2.png", width = 5, height = 3)
 
 
-col_country <- c("Other Prairies" = "#666666",
-                 "Canada" = "black",
-                 "Alberta" = "#66a61e",
-                 "Atlantic" = "#e6ab02",
-                 "British Columbia" = "#d95f02", 
-                 "Quebec_isq" = "#666666",
-                 "Quebec" = "#1E8FCC",
-                 "Ontario" = "#e7298a") 
+exps <- db_exc %>% 
+  filter(Age != "All") %>% 
+  select(Region, Sex, Age, Exposure)
 
-db_d_age2 %>% 
+db_m_age <- bind_rows(db_can_age, db_exc_age, db_isq_age) %>% 
+  left_join(exps) %>% 
+  mutate(Age = case_when(Region != "Quebec_isq" & Age == "0" ~ "0-44",
+                         Region != "Quebec_isq" & Age == "45" ~ "45-64",
+                         Region != "Quebec_isq" & Age == "65" ~ "65-84",
+                         Region != "Quebec_isq" & Age == "85" ~ "85+",
+                         Region == "Quebec_isq" & Age == "0" ~ "0-49",
+                         Region == "Quebec_isq" & Age == "50" ~ "50-69",
+                         Region == "Quebec_isq" & Age == "70" ~ "70+"))
+
+db_m_age2 <- db_m_age %>% 
+  mutate(Mx = 100000 * Deaths / Exposure,
+         Region = factor(Region, levels = levs)) %>% 
+  select(-Deaths, -Exposure) %>% 
+  spread(Source, Mx) %>% 
+  gather(Diagnosed, Excess, key = "Source", value = "Rate")
+
+db_ints <- db_m_age2 %>% 
+  filter(Source == "Excess",
+         Sex == "b")
+
+db_m_age2 %>% 
   filter(Sex == "b") %>% 
   ggplot()+
-  geom_point(aes(Age, Ratio, col = Region))+
-  geom_hline(yintercept = 1, linetype = "dashed")+
-  scale_y_log10(breaks = c(0.2, 0.5, 0.75, 1, 2, 5, 10, 20, 100, 200))+
-  scale_y_log10(breaks = c(0.2, 0.5, 0.75, 1, 2, 5, 10, 20, 100, 200), limits = c(0.2, 5))+
-  # scale_x_continuous(breaks = seq(0, 100, 10))+
-  scale_colour_manual(values = col_country)+
-  labs(title = "Ratio Excess/Identified COVID-19 mortality by age")+
+  geom_errorbar(data = db_ints, aes(Age, Rate, ymin = lp, ymax = up), colour = "black", width = .1)+
+  geom_point(aes(Age, Rate, col = Source), alpha = 0.7)+
+  scale_y_log10(labels = comma_format(accuracy = 1), breaks = c(1, 10, 100, 1000, 10000, 100000), limits = c(1, 150000))+
+  scale_color_manual(values = c("red", "black"))+
+  facet_wrap(~ Region, scales = "free", ncol = 3)+
+  labs(title = "Death Rates by age",
+       x = "Age",
+       y = "Rate (100K)")+
   theme_bw()+
   theme(
+    legend.position = "bottom",
+    legend.title = element_text(size=tx-1),
+    legend.text = element_text(size=tx-2),
     panel.grid.minor = element_blank(),
     plot.margin = margin(5,5,5,5,"mm"),
     plot.title = element_text(size=tx-1),
-    legend.text=element_text(size=tx-2),
-    legend.title=element_text(size=tx-1),
-    axis.text.x = element_text(size=tx),
+    axis.text.x = element_text(size=tx-1, angle = 60, hjust = 1),
     axis.text.y = element_text(size=tx-2),
     axis.title.x = element_text(size=tx-1),
     axis.title.y = element_text(size=tx-1),
@@ -218,9 +296,56 @@ db_d_age2 %>%
                                     linetype="solid")
   )
 
-ggsave("Figures/deaths_covid_vs_excess_ratio_age_v2.png", width = 5, height = 3)
+ggsave("Figures/deaths_covid_vs_excess_rates_age_conf_int.png", width = 5, height = 4)
 
 
+# all ages
+db_m_all <- db_m_age %>%
+  group_by(Region, Sex, Source) %>% 
+  summarise(Deaths = sum(Deaths),
+            Exposure = sum(Exposure)) %>% 
+  ungroup() %>% 
+  mutate(Mx = 100000 * Deaths / Exposure,
+         Region = factor(Region, levels = levs)) %>% 
+  select(-Deaths, -Exposure) %>% 
+  spread(Source, Mx) %>% 
+  gather(Diagnosed, Excess, key = "Source", value = "Rate")
+
+db_ints <- db_m_all %>% 
+  filter(Source == "Excess",
+         Sex == "b")
+
+db_m_all %>% 
+  filter(Sex == "b") %>% 
+  ggplot()+
+  geom_errorbar(data = db_ints, aes(Region, Rate, ymin = lp, ymax = up), colour = "black", width = .1)+
+  geom_point(aes(Region, Rate, col = Source), alpha = 0.8)+
+  scale_y_log10(labels = comma_format(accuracy = 1), breaks = c(1, 10, 100, 1000, 10000, 100000), limits = c(50, 10000))+
+  scale_color_manual(values = c("red", "black"))+
+  # facet_wrap(~ Region, scales = "free", ncol = 3)+
+  labs(title = "Death Rates by Region",
+       x = "Age",
+       y = "Rate (100K)")+
+  theme_bw()+
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size=tx-1),
+    legend.text = element_text(size=tx-2),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(5,5,5,5,"mm"),
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_text(size=tx-1),
+    axis.text.y = element_text(size=tx-2),
+    axis.title.x = element_text(size=tx-1),
+    axis.title.y = element_text(size=tx-1),
+    strip.text.x = element_text(size = 8),
+    strip.background = element_rect(color = "black", 
+                                    fill = "transparent", 
+                                    size = 0.3, 
+                                    linetype="solid")
+  )
+
+ggsave("Figures/deaths_covid_vs_excess_rates_all_conf_int.png", width = 5, height = 2.5)
 
 
 

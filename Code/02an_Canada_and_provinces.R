@@ -31,6 +31,28 @@ db_d <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/mast
   filter(country == "Canada") %>% 
   select(province, date, deaths)
   
+# data for Quebec: https://www.inspq.qc.ca/covid-19/donnees
+# data for Ontario: https://covid-19.ontario.ca/data
+
+d_qc <- read_csv("Data/d_qc.csv")
+d_on <- read_csv("Data/d_on.csv")
+
+d_qc2 <- d_qc %>% 
+  rename(date = 1,
+         d1 = 2,
+         d2 = 3, 
+         d3 = 4,
+         d4 = 5) %>% 
+  mutate(date = ymd(date),
+         deaths = d1 + d2 + d3 + d4,
+         province = "Quebec") %>% 
+  select(province, date, deaths)
+
+d_on2 <- d_on %>% 
+  rename(deaths = 2) %>% 
+  mutate(date = mdy(str_sub(category, 5, 15)),
+         province = "Ontario") %>% 
+  select(province, date, deaths)
 
 #### covid19 cases
 db_c <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv") %>%
@@ -41,21 +63,46 @@ db_c <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/mast
   filter(country == "Canada") %>% 
   select(province, date, cases)
 
-unique(db1$province)
+c_qc <- read_csv("Data/c_qc.csv")
+c_on <- read_csv("Data/c_on.csv")
+
+c_qc2 <- c_qc %>% 
+  rename(date = 1,
+         c1 = 2,
+         c2 = 3) %>% 
+  separate(date, c("date", "trash"), sep = " ") %>% 
+  mutate(date = mdy(date),
+         cases = c1 + c2,
+         province = "Quebec") %>% 
+  select(province, date, cases)
+
+c_on2 <- c_on %>% 
+  rename(cases = 2) %>% 
+  mutate(date = mdy(str_sub(category, 5, 15)),
+         province = "Ontario") %>% 
+  select(province, date, cases)
+
+
+qc_on <-  bind_rows(c_qc2, c_on2) %>% 
+  left_join(bind_rows(d_qc2, d_on2)) %>% 
+  replace_na(list(deaths = 0))
+
+
+# unique(db1$province)
 
 territories <- c("Yukon", "Northwest Territories", "Nunavut")
 atlantic <- c("New Brunswick", "Newfoundland and Labrador", "Nova Scotia", "Prince Edward Island")
 western <- c("Alberta", "Manitoba", "Saskatchewan", "British Columbia") 
 prairies <- c("Manitoba", "Saskatchewan") 
 
-exclude <- c("Diamond Princess", "Grand Princess")  
-
+exclude <- c("Diamond Princess", "Grand Princess", "Ontario", "Quebec")  
 
 #### All data togethter
 db1 <- db_c %>%
   left_join(db_d) %>% 
-  left_join(pop2) %>%
   filter(!(province %in% exclude)) %>% 
+  bind_rows(qc_on) %>% 
+  left_join(pop2) %>%
   arrange(province, date) %>% 
   mutate(province = case_when(province %in% territories ~ "Territories",
                               province %in% atlantic ~ "Atlantic",
@@ -79,7 +126,35 @@ db1 <- db_c %>%
   mutate(days = 1:n()) %>% 
   ungroup()
 
-db_terr <- db1 %>% 
+max_date <- db1 %>% 
+  group_by(province) %>% 
+  summarise(max_date = max(date)) %>% 
+  ungroup() %>% 
+  pull(max_date) %>% 
+  min()
+
+db_can <- db1 %>% 
+  filter(date <= max_date) %>% 
+  group_by(date) %>% 
+  summarise(cases = sum(cases),
+            deaths = sum(deaths),
+            pop = sum(pop),
+            new_c = sum(new_c),
+            new_d = sum(new_d)) %>% 
+  ungroup() %>% 
+  mutate(province = "Canada",
+         new_c_pcp = 1000000 * (new_c + 1) / pop,
+         new_d_pcp = 1000000 * (new_d + 1) / pop) %>% 
+  filter(cases > 1) %>% 
+  group_by(province) %>% 
+  mutate(days = 1:n()) %>% 
+  ungroup()
+
+
+db2 <- db1 %>% 
+  bind_rows(db_can)
+
+db_terr <- db2 %>% 
   filter(province == "Territories") %>% 
   mutate(new_c_pcp = 1000000 * (new_c) / pop,
          new_d_pcp = 1000000 * (new_d) / pop) %>% 
@@ -88,12 +163,12 @@ db_terr <- db1 %>%
 min_d <- 5
 min_c <- 5
 exc <- c("Territories")
-ctrs <- db1 %>% filter(!(province %in% exc)) %>% pull(province) %>% unique()
+ctrs <- db2 %>% filter(!(province %in% exc)) %>% pull(province) %>% unique()
 
-db2 <- NULL
+db3 <- NULL
 for(c in ctrs){
   
-  temp <- db1 %>% 
+  temp <- db2 %>% 
     filter(province == c)
   
   xs <- temp %>% filter(deaths > min_d) %>% pull(days)
@@ -108,20 +183,20 @@ for(c in ctrs){
     left_join(db_d_sm) %>% 
     left_join(db_c_sm)
   
-  db2 <- db2 %>% bind_rows(temp2) 
+  db3 <- db3 %>% bind_rows(temp2) 
   
 }
 
 # # splines vs rolling average
 # ############################
 library(zoo)
-db_ra <- db2 %>%
+db_ra <- db3 %>%
   group_by(province) %>%
   mutate(ra = rollapply(new_c_pcp, 7, mean, align = 'right', fill = NA)) %>%
   ungroup()
 
 db_ra %>%
-  filter(province == "Ontario") %>%
+  filter(province == "Canada") %>%
   ggplot()+
   geom_line(aes(date, new_c_pcp_sm)) +
   geom_line(aes(date, ra), col = "red") +
@@ -129,72 +204,54 @@ db_ra %>%
 # 
 # #############################
 
-unique(db2$province)
-
-col_country <- c("Alberta" = "#666666",
-                 # "Canada" = "black",
-                 "British Columbia" = "#1b9e77", 
-                 "Manitoba" = "#d95f02", 
-                 "New Brunswick" = "#66a61e", 
-                 "Nova Scotia" = "#e6ab02", 
-                 "Quebec" = "#1E8FCC",
-                 "Saskatchewan" = "#e7298a",
-                 "Ontario" = "#a6761d") 
-
-col_country <- c("Western" = "#666666",
-                 # "Canada" = "black",
-                 "Ontario" = "#66a61e", 
-                 "Quebec" = "#1E8FCC",
-                 "Territories" = "#e7298a",
-                 "Ontario" = "#a6761d") 
-
 col_country <- c("Other Prairies" = "#666666",
                  "Alberta" = "#66a61e",
                  "Atlantic" = "#e6ab02",
                  "British Columbia" = "#d95f02", 
-                 "Territories" = "black",
+                 "Territories" = "#1b9e77",
+                 "Canada" = "black",
                  "Quebec" = "#1E8FCC",
                  "Ontario" = "#e7298a") 
 
 d_x <- 0
-d_xend <- max(db2$date) - 5
+d_xend <- max(db3$date) - 5
 
 date <- Sys.Date()
-limx <- max(db2$date) + 4
+limx <- max(db3$date) + 4
 
 tx <- 8
-labs <- db2 %>%
+labs <- db3 %>%
   bind_rows(db_terr %>% 
               mutate(new_c_pcp_sm = 10)) %>% 
   group_by(province) %>% 
   filter(date == max(date)) %>% 
   mutate(date = date + 5)
 
-db2 %>%
+db3 %>%
   ggplot()+
   geom_line(aes(date, new_c_pcp_sm, col = province), size = .5, alpha = .9) +
   geom_point(data = db_terr, aes(date, new_c_pcp, col = province), size = .7, alpha = .8) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
-  geom_text_repel(data = labs,
-                  aes(date, new_c_pcp_sm, label = province, col = province), size = 1.7, segment.color = NA, 
-                  nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
+  # geom_text_repel(data = labs,
+  #                 aes(date, new_c_pcp_sm, label = province, col = province), size = 1.7, segment.color = NA, 
+  #                 nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
-  labs(x = "Date",
-       y = "COVID-19 cases per million",
-       title = "Reported daily new COVID-19 cases per million people")+
+  labs(y = "COVID-19 cases per million")+
+  annotate(geom = "text", label = "A", 
+           x = ymd("2020-03-01"), y = Inf, hjust = 0.5, vjust = 2)+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(5,5,5,5,"mm"),
+    plot.margin = margin(0,1,0,1,"mm"),
     plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx-3),
+    axis.text.x = element_blank(),
     axis.text.y = element_text(size=tx-3),
-    axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1)
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/new_cases_provinces.png", width = 5, height = 2.4)
+ggsave("Figures/new_cases_provinces.png", width = 5, height = 1.4)
 
 db_terr <- db1 %>% 
   filter(province == "Territories") %>% 
@@ -202,38 +259,38 @@ db_terr <- db1 %>%
          new_d_pcp = 1000000 * (new_d) / pop) %>% 
   filter(new_d_pcp > 0)
 
-labs <- db2 %>%
+labs <- db3 %>%
   filter(new_d > 0) %>% 
   group_by(province) %>% 
   filter(date == max(date)) %>% 
   mutate(date = date + 3)
 
-db2 %>%
+db3 %>%
   filter(new_d > 0) %>% 
   ggplot(aes(date, new_d_pcp_sm, col = province))+
   geom_line(size = .5, alpha = .9) +
   # scale_y_log10(expand = expansion(add = c(0,0.1))) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
-  geom_text_repel(data = labs,
-                  aes(date, new_d_pcp_sm, label = province), size = 1.7, segment.color = NA, 
-                  nudge_y = 0, nudge_x = 0, hjust = 0, force = .05, direction = "y", fontface = "bold") +
+  # geom_text_repel(data = labs,
+  #                 aes(date, new_d_pcp_sm, label = province), size = 1.7, segment.color = NA, 
+  #                 nudge_y = 0, nudge_x = 0, hjust = 0, force = .05, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
-  labs(x = "Date",
-       y = "COVID-19 deaths per million",
-       title = "Reported daily new COVID-19 deaths per million people")+
+  labs(y = "COVID-19 deaths per million")+
+  annotate(geom = "text", label = "B", 
+           x = ymd("2020-03-01"), y = Inf, hjust = 0.5, vjust = 2)+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(5,5,5,5,"mm"),
+    plot.margin = margin(0,1,0,1,"mm"),
     plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx-3),
+    axis.text.x = element_blank(),
     axis.text.y = element_text(size=tx-3),
-    axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1)
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size=tx-2, margin = margin(0, 2, 0, 0,"mm"))
   )
 
-ggsave("Figures/new_deaths_provinces.png", width = 5, height = 2.4)
+ggsave("Figures/new_deaths_provinces.png", width = 5, height = 1.4)
 
 
 db_t <- read_csv("https://health-infobase.canada.ca/src/data/covidLive/covid19.csv")
@@ -260,7 +317,7 @@ db_t2 <- db_t %>%
   group_by(province) %>% 
   mutate(days = 1:n()) %>% 
   ungroup() %>% 
-  filter(date <= "2020-10-31")
+  filter(date <= "2020-11-23")
   drop_na()
 
 # smoothing with splines
@@ -306,31 +363,11 @@ db_t5 %>%
   geom_line(aes(date, pos, col = province))
 
 pos_terr <- db_t2 %>% 
-  filter(province == "Quebec") %>% 
+  filter(province == "Territories") %>% 
   drop_na() %>% 
   filter(n_c > 0,
          n_t >0) %>% 
   mutate(pos = n_c / n_t)
-
-col_country <- c("Alberta" = "#666666",
-                 "Canada" = "black",
-                 "British Columbia" = "#1b9e77", 
-                 "Manitoba" = "#d95f02", 
-                 "New Brunswick" = "#66a61e", 
-                 "Nova Scotia" = "#e6ab02", 
-                 "Quebec" = "#1E8FCC",
-                 "Saskatchewan" = "#e7298a",
-                 "Ontario" = "#a6761d") 
-
-col_country <- c("Other Prairies" = "#666666",
-                 "Canada" = "black",
-                 "Alberta" = "#66a61e",
-                 "Atlantic" = "#e6ab02",
-                 "British Columbia" = "#d95f02", 
-                 "Territories" = "#1b9e77",
-                 "Quebec" = "#1E8FCC",
-                 "Ontario" = "#e7298a") 
-
 
 labs <- db_t5 %>%
   bind_rows(pos_terr %>% 
@@ -347,113 +384,62 @@ db_t5 %>%
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
-  geom_text_repel(data = labs,
-                  aes(date, pos, label = province, col = province), size = 1.7, segment.color = NA, 
-                  nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
+  # geom_text_repel(data = labs,
+  #                 aes(date, pos, label = province, col = province), size = 1.7, segment.color = NA, 
+  #                 nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
+  annotate(geom = "text", label = "C", 
+           x = ymd("2020-03-01"), y = Inf, hjust = 0.5, vjust = 2)+
   labs(x = "Date",
-       y = "%",
-       title = "Positive rate of COVID-19 tests")+
+       y = "Positive rate")+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(5,5,5,5,"mm"),
+    plot.margin = margin(1,1,1,1,"mm"),
     plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx-3),
+    axis.text.x = element_blank(),
     axis.text.y = element_text(size=tx-3),
-    axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1)
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/pos_rate_provinces.png", width = 5, height = 2.4)
-
-
-# our world in data
-###################
-# owid <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv",
-#                  col_types = cols(.default = "c")) 
-# 
-# owid2 <- owid %>% 
-#   select(location, date, positive_rate, total_cases, new_cases, total_tests, new_tests) %>% 
-#   mutate(date = ymd(date),
-#          n_c = as.numeric(new_cases),
-#          t_c = as.numeric(total_cases),
-#          t_t = as.numeric(total_tests),
-#          n_t = as.numeric(new_tests),
-#          pos = as.numeric(positive_rate),
-#          n_pos = n_c / n_t,
-#          t_pos = t_c / t_t,
-#          diff1 = n_pos / pos,
-#          diff2 = t_pos / pos) %>% 
-#   drop_na()
-  
+ggsave("Figures/pos_rate_provinces.png", width = 5, height = 1.4)
 
 # CFR by province
-
-provs <- db_c %>%
-  left_join(db_d) %>% 
-  filter(!(province %in% exclude)) %>% 
-  arrange(province, date) %>% 
-  mutate(province = case_when(province %in% territories ~ "Territories",
-                              province %in% atlantic ~ "Atlantic",
-                              province %in% prairies ~ "Other Prairies",
-                              TRUE ~ province)) %>% 
-  group_by(province, date) %>%
-  summarise(cases = sum(cases),
-            deaths = sum(deaths)) %>% 
-  ungroup()
-
-canad <- provs %>% 
-  group_by(date) %>% 
-  summarise(cases = sum(cases),
-            deaths = sum(deaths)) %>% 
-  ungroup() %>% 
-  mutate(province = "Canada")
-
-all <- bind_rows(provs, canad) %>% 
+db4 <- db2 %>% 
   filter(deaths > 0) %>% 
   mutate(CFR = deaths / cases)
 
-col_country <- c("Other Prairies" = "#666666",
-                 "Canada" = "black",
-                 "Alberta" = "#66a61e",
-                 "Atlantic" = "#e6ab02",
-                 "British Columbia" = "#d95f02", 
-                 "Territories" = "#1b9e77",
-                 "Quebec" = "#1E8FCC",
-                 "Ontario" = "#e7298a") 
-
-labs <- all %>%
+labs <- db4 %>%
   group_by(province) %>% 
   filter(date == max(date)) %>% 
   mutate(date = date + 3)
 tx <- 8
 
-all %>%
+db4 %>%
   ggplot(aes(date, CFR, col = province))+
-  geom_point(size = .5, alpha = .8) +
-  geom_vline(xintercept = ymd(c("2020-04-15")), size = .5, alpha = 0.5)+
-  geom_vline(xintercept = ymd(c("2020-07-16")), size = .5, alpha = 0.5)+
-  geom_vline(xintercept = ymd(c("2020-10-15")), size = .5, alpha = 0.5)+
+  geom_line(size = .5, alpha = .8) +
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
-  geom_text_repel(data = labs,
-                  aes(date, CFR, label = province), size = 2, segment.color = NA, 
-                  nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
+  annotate(geom = "text", label = "D", 
+           x = ymd("2020-03-01"), y = Inf, hjust = 0.5, vjust = 2)+
   labs(x = "Date",
-       y = "%",
-       title = "CFR over time")+
+       y = "Overall CFR",
+       color = 'Province')+
   theme(
     panel.grid.minor = element_blank(),
-    legend.position = "none",
-    plot.margin = margin(5,5,5,5,"mm"),
+    legend.position = "bottom",
+    legend.title = element_text(size=tx),
+    legend.text = element_text(size=tx-1),
+    legend.margin = margin(1,1,1,1,"mm"),
+    plot.margin = margin(1,1,1,1,"mm"),
     plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx-3),
+    axis.text.x = element_text(size=tx-2),
     axis.text.y = element_text(size=tx-3),
     axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1)
+    axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/all_CFR_over_time_provinces(jhdb).png", width = 5, height = 2.4)
+ggsave("Figures/all_CFR_over_time_provinces.png", width = 5, height = 2.3)

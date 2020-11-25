@@ -78,162 +78,57 @@ db_infs <- db_can_age2 %>%
          under_u = Cases / Infs_l,
          Region = case_when(Region == "All" ~ "Canada",
                        Region == "BC" ~ "British Columbia",
-                       TRUE ~ Region)) 
-  
-# underestimation for both sexes by province
-tx <- 8
-db_infs %>% 
-  filter(Sex == "b") %>% 
-  ggplot()+
-  geom_point(aes(Age, under))+
-  # geom_point(aes(Age, under_l), alpha = 0.4, shape = 24)+
-  # geom_point(aes(Age, under_u), alpha = 0.4, shape = 25)+
-  geom_errorbar(aes(Age, under, ymin=under_l, ymax=under_u), colour="black", width=.1) +
-  facet_wrap(~ Region)+
-  geom_hline(yintercept = 1, linetype = "dashed")+
-  scale_y_log10(breaks = c(0.1, 0.25, 0.5, 1, 2), labels = percent_format(accuracy = 1L))+
-  scale_x_continuous(breaks = seq(0, 100, 10))+
-  labs(title = "Identified COVID infections by age")+
-  theme_bw()+
-  theme(
-    panel.grid.minor = element_blank(),
-    legend.position = "none",
-    plot.margin = margin(5,5,5,5,"mm"),
-    plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx),
-    axis.text.y = element_text(size=tx-2),
-    axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1),
-    strip.text.x = element_text(size = 8),
-    strip.background = element_rect(color = "black", 
-                                    fill = "transparent", 
-                                    size = 0.3, 
-                                    linetype="solid")
-  )
-
-ggsave("Figures/underest_infections.png", width = 5, height = 4.5)
-
-col_country <- c("Other Prairies" = "#666666",
-                 "Canada" = "black",
-                 "Alberta" = "#66a61e",
-                 "Atlantic" = "#e6ab02",
-                 "British Columbia" = "#d95f02", 
-                 "Territories" = "#1b9e77",
-                 "Quebec" = "#1E8FCC",
-                 "Ontario" = "#e7298a") 
-
-db_infs %>% 
-  filter(Sex == "b") %>% 
-  ggplot()+
-  geom_point(aes(Age, under, col = Region))+
-  geom_point(aes(Age, under_l, col = Region), alpha = 0.4)+
-  geom_point(aes(Age, under_u, col = Region), alpha = 0.4)+
-  geom_hline(yintercept = 1, linetype = "dashed")+
-  scale_y_log10(breaks = c(0.1, 0.25, 0.5, 1, 2), labels = percent_format(accuracy = 1L))+
-  scale_x_continuous(breaks = seq(0, 100, 10))+
-  scale_colour_manual(values = col_country)+
-  labs(title = "Identified COVID infections by age")+
-  theme_bw()+
-  theme(
-    panel.grid.minor = element_blank(),
-    plot.margin = margin(5,5,5,5,"mm"),
-    plot.title = element_text(size=tx-1),
-    legend.text=element_text(size=tx-2),
-    legend.title=element_text(size=tx-1),
-    axis.text.x = element_text(size=tx),
-    axis.text.y = element_text(size=tx-2),
-    axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1),
-    strip.text.x = element_text(size = 8),
-    strip.background = element_rect(color = "black", 
-                                    fill = "transparent", 
-                                    size = 0.3, 
-                                    linetype="solid")
-  )
-
-ggsave("Figures/underest_infections_v2.png", width = 5, height = 3)
-
+                       TRUE ~ Region),
+         Age = as.character(Age)) 
 
 db_infs_all <- db_infs %>% 
   filter(Sex == "b") %>% 
-  group_by(Region) %>% 
+  group_by(Region, Sex) %>% 
   summarise(Deaths = sum(Deaths),
             Cases = sum(Cases),
-            Infs = sum(Infs)) %>% 
+            Infs = sum(Infs),
+            Infs_l = sum(Infs_l),
+            Infs_u = sum(Infs_u)) %>% 
   ungroup() %>% 
-  mutate(under = Cases / Infs)
+  mutate(under = Cases / Infs,
+         Age = "All",
+         under_l = Cases / Infs_u,
+         under = Cases / Infs,
+         under_u = Cases / Infs_l)
 
 
+levs <- c("Canada", "Alberta", "British Columbia", "Ontario", "Quebec")
+
+db_infs_can <- db_infs %>% 
+  bind_rows(db_infs_all) %>% 
+  mutate(age_all = ifelse(Age == "All", "s", "n"),
+         Region = factor(Region, levels = levs))
+
+# underestimation for both sexes by province
 tx <- 8
-db_infs_all %>% 
+db_infs_can %>% 
+  filter(Sex == "b") %>% 
   ggplot()+
-  geom_point(aes(Region, under))+
-  scale_y_log10(breaks = c(0.1, 0.3, 0.4, 0.5, 0.75, 1, 2, 5, 10), labels = percent_format(accuracy = 1L))+
+  geom_point(aes(Age, under, col = age_all))+
+  geom_errorbar(aes(Age, under, ymin=under_l, ymax=under_u, col = age_all), width=.1) +
+  facet_wrap(~ Region)+
   geom_hline(yintercept = 1, linetype = "dashed")+
-  labs(title = "Identified COVID-19 infections, all ages",
-       x = "Province",
-       y = "Percentage indetified")+
+  scale_y_log10(breaks = c(0.1, 0.25, 0.5, 1, 2, 4), labels = percent_format(accuracy = 1L))+
+  scale_color_manual(values = c("black", "blue"))+
   theme_bw()+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
     plot.margin = margin(5,5,5,5,"mm"),
     plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx-1),
+    axis.text.x = element_text(size=tx),
     axis.text.y = element_text(size=tx-2),
     axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1)
+    axis.title.y = element_text(size=tx-1),
+    strip.text.x = element_text(size = 8),
+    strip.background = element_rect(fill = "transparent")
   )
 
-ggsave("Figures/underest_infections_all.png", width = 5, height = 3)
-
-
-
-
-
-
-
-# Calculating infections by age and sex
-db_infs2 <- db_infs %>% 
-  select(Region, Sex, Age, Cases, Infs, Source) %>% 
-  gather(Cases, Infs, key = Measure, value = Value)
-
-
-# both sexes
-db_infs2 %>% 
-  filter(Sex == "b") %>% 
-  ggplot()+
-  geom_point(aes(Age, Value, col = Measure))+
-  facet_wrap(~ Region, scales = "free")+
-  labs(title = "COVID cases and infections")+
-  theme_bw()
-
-ggsave("Figures/cases_infections_sex.png")
-
-
-
-# by sexes
-db_infs2 %>% 
-  filter(Sex != "b") %>% 
-  ggplot()+
-  geom_point(aes(Age, Value, col = Measure, shape = Sex))+
-  facet_wrap(~ Region, scales = "free")+
-  labs(title = "COVID cases and infections")+
-  theme_bw()
-
-ggsave("Figures/cases_infections_sex.png")
-
-db_infs %>% 
-  filter(Sex != "b") %>% 
-  ggplot()+
-  geom_point(aes(Age, under, col = Sex))+
-  facet_wrap(~ Region)+
-  geom_hline(yintercept = 1)+
-  # scale_y_continuous(limits = c(0.05, 2))+
-  # scale_y_continuous(limits = c(0.05, 2))+
-  labs(title = "Underestimation of COVID infections")+
-  theme_bw()
-
-ggsave("Figures/underest_infections_sex.png")
+ggsave("Figures/underest_infections.png", width = 5, height = 3.5)
 
 

@@ -173,6 +173,57 @@ apply_kitagawa <- function(db_d1, db_d2){
 }
 
 
+diffs_ref <- function(db, rfs, rgs, geo_level, h){
+  db_diffs_all <- NULL
+  for(p1 in rfs){
+    db_diffs_can <- NULL
+    for(p2 in rgs){
+      db_diffs_can <- db_diffs_can %>% 
+        bind_rows(bind_cols(tibble(P1 = p1, P2 = p2), kitagawa(db, p1, p2, s)))
+    }
+    
+    db_diffs_can2 <- db_diffs_can %>% 
+      gather(alpha, beta, key = "Components", value = Value) %>% 
+      mutate(P2cfr = paste0(P2, " (", round(CFR2, 3), ")"),
+             P1cfr = paste0(P1, " (", round(CFR1, 3), ") as reference"))
+    
+    db_diffs_all <- db_diffs_all %>% 
+      bind_rows(db_diffs_can2) %>% 
+      filter(P2 != P1) %>% 
+      mutate(t = "Total CFR difference")
+    
+  }
+  
+  db_diffs_all %>% 
+    ggplot()+
+    geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
+    geom_bar(aes(reorder(P2cfr, -diff), Value, fill = Components, col = Components), stat = "identity", alpha = 0.5)+
+    geom_point(aes(reorder(P2cfr, -diff), diff, shape = t), col = "black", size = 2)+
+    facet_wrap(~ P1cfr, ncol = 1, scales = "free_y")+
+    scale_y_continuous(limits = c(-0.1, 0.1))+
+    geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
+    scale_color_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
+    scale_fill_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
+    # scale_shape_manual(values = colors)+
+    guides(shape = guide_legend(title = "", order = 1))+
+    labs(x = geo_level,
+         y = "CFR difference")+
+    theme_bw()+
+    coord_flip()+
+    theme(
+      legend.position="bottom",
+      legend.title = element_text(size = tx),
+      legend.text = element_text(size = tx - 1),
+      legend.key.size = unit(0.5,"line"),
+      strip.background = element_rect(fill="transparent"),
+      strip.text.y = element_text(size = tx + 1),
+      axis.text.x = element_text(size = tx),
+      axis.text.y = element_text(size = tx),
+      axis.title.x = element_text(size = tx + 1),
+      axis.title.y = element_text(size = tx + 1)
+    )
+  ggsave(paste0("Figures/cfr_diff_reference_", geo_level, ".png"), width = 5, height = h)
+}
 
 
 

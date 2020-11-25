@@ -135,7 +135,7 @@ col_country <- c("Belgium" = "#666666",
 
 d_x <- 0
 d_xend <- max(db2$date) - 5
-d_y <- min_rate
+# d_y <- min_rate
 d_yend <- min_rate * (1 + log(2) / 2) ^ d_xend
 
 date <- Sys.Date()
@@ -153,25 +153,25 @@ db2 %>%
   scale_y_continuous(limits = c(0, 1500)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
-  geom_text_repel(data = labs,
-                  aes(date, new_c_pcp_sm, label = country), size = 1.5, segment.color = NA, 
-                  nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
+  # geom_text_repel(data = labs,
+  #                 aes(date, new_c_pcp_sm, label = country), size = 1.5, segment.color = NA, 
+  #                 nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
-  labs(x = "Date",
-       y = "COVID-19 cases per million",
-       title = "Reported daily new COVID-19 cases per million people")+
+  annotate(geom = "text", label = "A", 
+           x = ymd("2020-03-01"), y = Inf, hjust = 0.5, vjust = 2)+
+  labs(y = "COVID-19 cases per million")+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(5,5,5,5,"mm"),
+    plot.margin = margin(2,1,0,1,"mm"),
     plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx-3),
-    axis.text.y = element_text(size=tx-3),
-    axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1)
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size=tx-2),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/new_cases_world.png", width = 5, height = 2.4)
+ggsave("Figures/new_cases_world.png", width = 5, height = 1.4)
 
 labs <- db2 %>%
   group_by(country) %>% 
@@ -184,25 +184,25 @@ db2 %>%
   scale_y_continuous(limits = c(0, 30)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
-  geom_text_repel(data = labs,
-                  aes(date, new_d_pcp_sm, label = country), size = 1.5, segment.color = NA, 
-                  nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
+  # geom_text_repel(data = labs,
+  #                 aes(date, new_d_pcp_sm, label = country), size = 1.5, segment.color = NA, 
+  #                 nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
-  labs(x = "Date",
-       y = "COVID-19 deaths per million",
-       title = "Reported daily new COVID-19 deaths per million people")+
+  annotate(geom = "text", label = "B", 
+           x = ymd("2020-03-01"), y = Inf, hjust = 0.5, vjust = 2)+
+  labs(y = "COVID-19 deaths per million")+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(5,5,5,5,"mm"),
+    plot.margin = margin(0,1,0,1,"mm"),
     plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx-3),
-    axis.text.y = element_text(size=tx-3),
-    axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1)
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size=tx-2),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size=tx-2, margin = margin(0, 3, 0, 0,"mm"))
   )
 
-ggsave("Figures/new_deaths_world.png", width = 5, height = 2.4)
+ggsave("Figures/new_deaths_world.png", width = 5, height = 1.4)
 
 db_t <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv",
                   col_types = cols(.default = "c")) 
@@ -275,25 +275,26 @@ db_t3 %>%
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
-  geom_text_repel(data = labs,
-                  aes(date, pos_sm, label = country), size = 1.5, segment.color = NA, 
-                  nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
+  # geom_text_repel(data = labs,
+  #                 aes(date, pos_sm, label = country), size = 1.5, segment.color = NA, 
+  #                 nudge_y = 0, nudge_x = 0, hjust = 0, force = .1, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
+  annotate(geom = "text", label = "C", 
+           x = ymd("2020-03-01"), y = Inf, hjust = 0.5, vjust = 2)+
   labs(x = "Date",
-       y = "%",
-       title = "Daily positive rate of COVID-19 tests")+
+       y = "Positive rate")+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(5,5,5,5,"mm"),
+    plot.margin = margin(1,1,1,1,"mm"),
     plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx-3),
-    axis.text.y = element_text(size=tx-3),
-    axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1)
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size=tx-2),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/pos_rate_world.png", width = 5, height = 2.4)
+ggsave("Figures/pos_rate_world.png", width = 5, height = 1.4)
 
 
 # CFR over time
@@ -318,22 +319,27 @@ cfrs %>%
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
-  geom_text_repel(data = labs,
-                  aes(date, cfr, label = country), size = 1.5, segment.color = NA, 
-                  nudge_y = 0, nudge_x = 0, hjust = 0, force = 1.5, direction = "y", fontface = "bold") +
+  # geom_text_repel(data = labs,
+  #                 aes(date, cfr, label = country), size = 1.5, segment.color = NA, 
+  #                 nudge_y = 0, nudge_x = 0, hjust = 0, force = 1.5, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
+  annotate(geom = "text", label = "D", 
+           x = ymd("2020-03-01"), y = Inf, hjust = 0.5, vjust = 2)+
   labs(x = "Date",
-       y = "%",
-       title = "Cumulative CFR over time")+
+       y = "Overall CFR",
+       color = 'Country')+
   theme(
     panel.grid.minor = element_blank(),
-    legend.position = "none",
-    plot.margin = margin(5,5,5,5,"mm"),
+    legend.position = "bottom",
+    legend.title = element_text(size=tx),
+    legend.text = element_text(size=tx-1),
+    legend.margin = margin(1,1,1,1,"mm"),
+    plot.margin = margin(1,1,1,1,"mm"),
     plot.title = element_text(size=tx-1),
-    axis.text.x = element_text(size=tx-3),
-    axis.text.y = element_text(size=tx-3),
+    axis.text.x = element_text(size=tx-2),
+    axis.text.y = element_text(size=tx-2),
     axis.title.x = element_text(size=tx-1),
-    axis.title.y = element_text(size=tx-1)
+    axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/all_CFR_world.png", width = 5, height = 2.4)
+ggsave("Figures/all_CFR_world.png", width = 5, height = 2.3)

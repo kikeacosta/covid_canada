@@ -57,111 +57,49 @@ table(db_can_oth$Region, db_can_oth$Sex)
 
 unique(db_can_oth$Region)
 
+# Across countries
+##################
 
-p1 <- "Netherlands"
-db <- db_can_oth
-
-cities <- c("Berlin", "Toronto", "NYC",  "Montreal")
-
-cts <- c("Canada", 
-         # "Alberta",
-         # "British Columbia",
-         # "Ontario",
-         # "Quebec",
-         "Belgium",
+rgs <- c("Belgium",
          "Denmark",
          "Germany",
          "Italy",
          "Netherlands",
          "Sweden",
          "USA")
+rfs <- c("Canada")
+db_counts <- diffs_ref(db_can_oth, rfs, rgs, "Countries", 2.5)
 
-refs <- c("Canada")
-for(p1 in refs){
-  db_diffs_can <- NULL
-  for(p2 in cts){
-    db_diffs_can <- db_diffs_can %>% 
-      bind_rows(bind_cols(tibble(P1 = p1, P2 = p2), kitagawa(db_can_oth, p1, p2, s)))
-  }
-  
-  db_diffs_can2 <- db_diffs_can %>% 
-    gather(alpha, beta, key = "Component", value = Value) %>% 
-    filter(P2 != p1) %>% 
-    mutate(P2cfr = paste0(P2, " (", round(CFR2, 3), ")"))
-  
-  cfr_ref <- db_diffs_can2 %>% pull(CFR1) %>% unique() %>% round(., 3)
-  
-  db_diffs_can2 %>% 
-    ggplot()+
-    geom_bar(aes(reorder(P2cfr, -diff), Value, fill = Component, col = Component), stat = "identity", alpha = 0.5)+
-    geom_point(aes(reorder(P2cfr, -diff), diff), col = "black", size = 2)+
-    geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    scale_y_continuous(limits = c(-0.1, 0.1))+
-    scale_color_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
-    scale_fill_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
-    labs(title = paste0("Decomposition of CFR, ", p1, " (", cfr_ref, ") as reference"),
-         x = "Countries",
-         y = "CFR difference")+
-    theme_bw()+
-    coord_flip()+
-    theme(
-      legend.position="bottom",
-      legend.title = element_text(size = tx),
-      legend.text = element_text(size = tx - 1),
-      legend.key.size = unit(0.5,"line"),
-      plot.title = element_text(size = tx + 2),
-      axis.text.x = element_text(size = tx),
-      axis.text.y = element_text(size = tx),
-      axis.title.x = element_text(size = tx + 1),
-      axis.title.y = element_text(size = tx + 1)
-    )
-  
-  ggsave(paste0("Figures/cfr_diff_reference_", p1, "1.png"), width = 5, height = 3)
-}
+# Provinces and Canada
+######################
 
-refs <- c("Montreal", "Toronto")
-for(p1 in refs){
-  db_diffs_can <- NULL
-  for(p2 in cities){
-    db_diffs_can <- db_diffs_can %>% 
-      bind_rows(bind_cols(tibble(P1 = p1, P2 = p2), kitagawa(db_can_oth, p1, p2, s)))
-  }
-  
-  db_diffs_can2 <- db_diffs_can %>% 
-    gather(alpha, beta, key = "Component", value = Value) %>% 
-    filter(P2 != p1) %>% 
-    mutate(P2cfr = paste0(P2, " (", round(CFR2, 3), ")"))
-  
-  cfr_ref <- db_diffs_can2 %>% pull(CFR1) %>% unique() %>% round(., 3)
-  
-  db_diffs_can2 %>% 
-    ggplot()+
-    geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    geom_bar(aes(reorder(P2cfr, -diff), Value, fill = Component, col = Component), stat = "identity", alpha = 0.5)+
-    geom_point(aes(reorder(P2cfr, -diff), diff), col = "black", size = 2)+
-    scale_y_continuous(limits = c(-0.1, 0.1))+
-    geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    scale_color_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
-    scale_fill_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
-    labs(title = paste0("Decomposition of CFR, ", p1, " (", cfr_ref, ") as reference"),
-         x = "Cities",
-         y = "CFR difference")+
-    theme_bw()+
-    coord_flip()+
-    theme(
-      legend.position="bottom",
-      legend.title = element_text(size = tx),
-      legend.text = element_text(size = tx - 1),
-      legend.key.size = unit(0.5,"line"),
-      plot.title = element_text(size = tx + 2),
-      axis.text.x = element_text(size = tx),
-      axis.text.y = element_text(size = tx),
-      axis.title.x = element_text(size = tx + 1),
-      axis.title.y = element_text(size = tx + 1)
-    )
-  
+rgs <- c("Alberta",
+         "British Columbia",
+         "Ontario",
+         "Quebec")
+rfs <- c("Canada")
+db_provs <- diffs_ref(db_can_oth, rfs, rgs, "Provinces", 2)
 
-  ggsave(paste0("Figures/cfr_diff_reference_", p1, ".png"), width = 5, height = 1.8)
-}
+rgs <- c("Canada", 
+         "Alberta",
+         "British Columbia",
+         "Ontario",
+         "Quebec")
+rfs <- c("Alberta",
+         "British Columbia",
+         "Ontario",
+         "Quebec")
+db_provs <- diffs_ref(db_can_oth, rfs, rgs, "Provinces", 5)
+
+# Across cities
+###############
+
+rgs <- c("Montreal",
+         "Toronto", 
+         "Berlin", 
+         "NYC")
+rfs <- c("Montreal", 
+         "Toronto")
+db_cities <- diffs_ref(db_can_oth, rfs, rgs, "Cities", 2.7)
 
 

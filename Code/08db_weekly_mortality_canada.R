@@ -10,17 +10,21 @@ source("Code/00_functions.R")
 
 # provisionally, only for the main provinces and national
 
-# reading mortality and population data from StatCan files
+# loading mortality data from StatCan files
+# https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=1310076801
 deaths <- read_csv("Data/201113_13100768-eng.zip",
                    col_types = cols(.default = "c"))
 
-qc <- read_csv2("Data/DecesSemaine_QC_2010-2020_GrAge.csv",
+# loading mortality from ISQ
+# "https://statistique.quebec.ca/docs-ken/multimedia/DecesSemaine_QC_2010-2020_GrAge.xlsx"
+qc <- read_xlsx("Data/DecesSemaine_QC_2010-2020_GrAge.xlsx",
                 skip = 5) %>% 
   rename(Year = 1,
          Age = 3) %>% 
   drop_na(Age) %>% 
   select(-Statut)
 
+# loading population data from StatCan files
 pop <- read_csv("Data/17100005-eng.zip",
                 col_types = cols(.default = "c"))
 
@@ -171,28 +175,28 @@ table(inters_pop$Region)
 # Visual test
 #############
 
-# r <- "Alberta"
-# a <- "50"
-# s <- "f"
-# 
-# orig <- pop2 %>%
-#   filter(Region == r,
-#          Age == a,
-#          Sex == s) %>%
-#   left_join(weeks2) %>%
-#   mutate(Source = "Original")
-# 
-# inter <- inters_pop %>%
-#   filter(Region == r,
-#          Age == a,
-#          Sex == s,
-#          Week != 27) %>%
-#   mutate(Source = "Interpolation",
-#          Age = as.character(Age))
-# 
-# ggplot()+
-#   geom_line(data = inter, aes(t, Exposure), col = "red", alpha = 0.6)+
-#   geom_point(data = orig, aes(t, Exposure), col = "black")
+r <- "Alberta"
+a <- "50"
+s <- "f"
+
+orig <- pop2 %>%
+  filter(Region == r,
+         Age == a,
+         Sex == s) %>%
+  left_join(weeks2) %>%
+  mutate(Source = "Original")
+
+inter <- inters_pop %>%
+  filter(Region == r,
+         Age == a,
+         Sex == s,
+         Week != 27) %>%
+  mutate(Source = "Interpolation",
+         Age = as.character(Age))
+
+ggplot()+
+  geom_line(data = inter, aes(t, Exposure), col = "red", alpha = 0.6)+
+  geom_point(data = orig, aes(t, Exposure), col = "black")
 
 ############################################
 

@@ -26,6 +26,85 @@ spline_this <- function(xs, ys, l){
   return(res)
 }
 
+
+# distribution unknown ages and sex values
+distribute_unknwons <- function(db){
+  
+  db_known <- db %>% 
+    filter(Age != "unk",
+           Sex != "o") 
+  
+  db_unk_sex <- db %>% 
+    filter(Sex == "o") %>% 
+    select(-Sex) %>% 
+    rename(unk_sex = Value)
+  
+  db_unk_age <- db %>% 
+    filter(Age == "unk") %>% 
+    select(-Age) %>% 
+    rename(unk_age = Value) 
+  
+  dists <- db_known %>% 
+    group_by(Region, Measure, Sex) %>% 
+    mutate(dist_age = Value / sum(Value)) %>% 
+    ungroup() %>%  
+    group_by(Region, Measure, Age) %>% 
+    mutate(dist_sex = Value / sum(Value)) %>% 
+    ungroup() %>% 
+    left_join(db_unk_sex) %>% 
+    left_join(db_unk_age) %>% 
+    mutate(imp_sex = unk_sex * dist_sex,
+           imp_age = unk_age * dist_age) %>% 
+    replace_na(list(imp_sex = 0, imp_age = 0)) %>% 
+    mutate(Value_imp = Value + imp_sex + imp_age) %>% 
+    select(Region, Measure, Sex, Age, Value_imp) %>% 
+    rename(Value = Value_imp)
+  
+  return(dists)
+}
+
+
+# harmonizing age groups
+########################
+
+harmonize_age <- function(db, lambda = 100){
+  
+  Age <- db$Age %>% as.integer()
+  Value <- db$Value
+  nlast <- 105 - max(Age)
+  
+  library(ungroup)
+  V1 <- pclm(x = Age, 
+             y = Value, 
+             nlast = nlast, 
+             control = list(lambda = lambda, deg = 3))$fitted
+  
+  out <- tibble(Age = seq(0, 104, 1), Value = V1) 
+  
+  return(out)
+}
+
+db_harm2 <- tibble()
+
+for(pp in c("Ontario", "Toronto", "Alberta")){
+  for(ms in c("Cases", "Deaths")){
+    for(sx in c("f", "m")){
+      chunk <- db_canada2 %>% 
+        filter(Region == pp,
+               Measure == ms,
+               Sex == sx)
+      
+      db_harm <- harmonize_age(chunk) %>% 
+        mutate(Region = pp,
+               Measure = ms,
+               Sex = sx)
+      
+      db_harm2 <- bind_rows(db_harm2, db_harm)
+      
+    }
+  }
+}
+
 # Kitagawa decomposition
 ########################
 kita <- function(db, p1, p2, d){

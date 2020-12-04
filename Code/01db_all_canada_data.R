@@ -1,7 +1,6 @@
 rm(list=ls())
 Sys.setenv(LANG = "en")
 Sys.setlocale("LC_ALL","English")
-
 library(tidyverse)
 library(readr)
 library(lubridate)
@@ -10,7 +9,6 @@ library(osfr)
 
 # reading Canada data
 #####################
-
 # Canadian data
 db_nal <- read_rds("Data/201029_covid_canada.rds") %>% 
   mutate(Code = "CA", Region = "All") %>% 
@@ -20,6 +18,7 @@ db_nal <- read_rds("Data/201029_covid_canada.rds") %>%
 # Toronto data
 db_t1 <- read_csv("Data/Toronto/Toronto_Cases_Deaths_df_01.07.2020.csv")
 db_t2 <- read_csv("Data/Toronto/Toronto_Cases_Deaths_df_24.10.2020.csv")
+db_on_ab <- read_rds("Output/db_on_to_ab_cases&deaths.rds")
 
 # OSF Data - Output_10
 osf_retrieve_file("43ucn") %>%

@@ -51,8 +51,8 @@ corona_cases <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID
                              TRUE ~ country))
 
 
-ctrs <- c("Belgium", 
-          "Canada", 
+ctrs <- c("Canada", 
+          "Belgium",
           "Denmark", 
           "Netherlands",
           "Sweden",
@@ -82,7 +82,7 @@ db1 <- corona_cases %>%
 min_d <- 5
 min_c <- 5
 
-c <- "Canada"
+c <- "Belgium"
 db2 <- NULL
 for(c in ctrs){
 
@@ -114,12 +114,14 @@ db_ra <- db2 %>%
   ungroup()
   
 db_ra %>%
-  filter(country == "Belgium") %>% 
+  filter(country == "Canada") %>% 
   ggplot()+
   geom_line(aes(date, new_c_pcp_sm)) +
   geom_line(aes(date, ra), col = "red") +
   geom_point(aes(date, new_c_pcp))
-  
+
+ggsave("Figures/new_cases_world_no_Bel.png", width = 5, height = 1.4)
+
 #############################
 
 unique(db2$country)
@@ -150,7 +152,7 @@ labs <- db2 %>%
 db2 %>%
   ggplot(aes(date, new_c_pcp_sm, col = country))+
   geom_line(size = .5, alpha = .9) +
-  scale_y_continuous(limits = c(0, 1500)) +
+  scale_y_continuous() +
   scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   # geom_text_repel(data = labs,
@@ -171,7 +173,7 @@ db2 %>%
     axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/new_cases_world.png", width = 5, height = 1.4)
+ggsave("Figures/new_cases_world_no_Bel.png", width = 5, height = 1.4)
 
 labs <- db2 %>%
   group_by(country) %>% 

@@ -196,7 +196,7 @@ db_ra <- db3 %>%
   ungroup()
 
 db_ra %>%
-  filter(province == "Canada") %>%
+  filter(province == "Quebec") %>%
   ggplot()+
   geom_line(aes(date, new_c_pcp_sm)) +
   geom_line(aes(date, ra), col = "red") +

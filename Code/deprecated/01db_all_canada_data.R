@@ -10,14 +10,14 @@ library(osfr)
 # reading Canada data
 #####################
 # Canadian data
-db_nal <- read_rds("Data/201029_covid_canada.rds") %>% 
-  mutate(Code = "CA", Region = "All") %>% 
-  rename(Date = date) %>% 
-  select(Region, Code, Date, Sex, Age, Measure, Value)
+# db_nal <- read_rds("Data/201029_covid_canada.rds") %>% 
+#   mutate(Code = "CA", Region = "All") %>% 
+#   rename(Date = date) %>% 
+#   select(Region, Code, Date, Sex, Age, Measure, Value)
 
 # Toronto data
-db_t1 <- read_csv("Data/Toronto/Toronto_Cases_Deaths_df_01.07.2020.csv")
-db_t2 <- read_csv("Data/Toronto/Toronto_Cases_Deaths_df_24.10.2020.csv")
+# db_t1 <- read_csv("Data/Toronto/Toronto_Cases_Deaths_df_01.07.2020.csv")
+# db_t2 <- read_csv("Data/Toronto/Toronto_Cases_Deaths_df_24.10.2020.csv")
 db_on_ab <- read_rds("Output/db_on_to_ab_cases&deaths.rds")
 
 # OSF Data - Output_10
@@ -36,13 +36,20 @@ db_cov %>%
   pull(Code) %>% 
   unique()
 
-# only keeping regions from regional sources
+# only keeping regions from Canada
 db_prv <- db_cov %>% 
   filter(Country == "Canada") %>% 
   mutate(Code = str_replace(Code, Date, ""),
          Date = dmy(Date)) %>% 
-  select(-Tests) %>% 
-  filter(Region != "All")
+  select(-Tests, -AgeInt) 
+
+# data availability by region
+#############################
+
+# last date of each province
+db_prv %>% 
+  group_by(Code) %>% 
+  summarise(last_date = max(Date))
 
 # common dates for all regions
 comm_dates <- db_prv %>% 
@@ -52,34 +59,59 @@ comm_dates <- db_prv %>%
   mutate(id = 1) %>% 
   spread(Region, id)
 
+##############################################################################
+
+# as the 1st wave of the pandemic wade out at mid-July, we selected July 16th, 
+# which is common to all provinces
+
+##############################################################################
+
+d1 <- "2020-07-16"
+
 unique(db_prv$Region)
 unique(db_prv$Code)
 unique(db_prv$Sex)
 
-# last date of each province
-db_prv %>% 
-  group_by(Code) %>% 
-  summarise(last_date = max(Date))
+db_prv2 <- db_prv %>% 
+  filter(Date == d1)
 
-######################################################
-# looking at all population
-######################################################
+# Provisional adjustment for Ontario and Alberta data
+# replace values from the adjusted database
 
-db_prv_all <- db_prv %>% 
-  # filter(Sex == "b") %>% 
-  group_by(Region, Sex, Code, Date) %>% 
+db_on_ab2 <- db_on_ab %>% 
+  mutate(Country = "Canada",
+         Code = case_when(Region == "Alberta" ~ "CA_AB",
+                            Region == "Ontario" ~ "CA_ON",
+                            Region == "Toronto" ~ "CA_TOR"),
+         Date = ymd(Date)) %>% 
+  spread(Measure, Value)
+
+db_on_ab_all_sex <- db_on_ab2 %>% 
+  group_by(Country, Region, Code, Date, Age) %>% 
   summarise(Cases = sum(Cases),
             Deaths = sum(Deaths)) %>% 
   ungroup() %>% 
-  arrange(Region, Date)
+  mutate(Sex = "b")
 
-db_nal_all <- db_nal %>% 
-  filter(Age == "TOT") %>% 
-  spread('Measure', 'Value') %>% 
-  select(Region, Sex, Code, Date, Cases, Deaths) %>% 
-  arrange(Date)
-  
-db_can <- bind_rows(db_prv_all, db_nal_all)
+db_on_ab3 <- db_on_ab2 %>% 
+  bind_rows(db_on_ab_all_sex)
+
+db_prv3 <- db_prv2 %>% 
+  filter(!(Region %in% c("Alberta", "Ontario", "Toronto")),
+         !(Code == "CA_BC" & Sex != "b")) %>% 
+  bind_rows(db_on_ab3)
+
+#####################
+# looking at all ages
+#####################
+
+# db_can <- db_prv %>% 
+#   # filter(Sex == "b") %>% 
+#   group_by(Region, Sex, Code, Date) %>% 
+#   summarise(Cases = sum(Cases),
+#             Deaths = sum(Deaths)) %>% 
+#   ungroup() %>% 
+#   arrange(Region, Date)
 
 ##########################
 # temporal adjustments 
@@ -87,26 +119,26 @@ db_can <- bind_rows(db_prv_all, db_nal_all)
 # db_can <- db_can %>% 
 #   filter(!(Region == "Montreal" & Date >= "2020-10-09"))
 
-# adjustment of BC deaths which are mutiplied by 100
-db_can <- db_can %>% 
-  mutate(Deaths = ifelse(Code == "CA_BC" & Date %in% ymd(c("2020-04-28", "2020-04-29")), Deaths / 100, Deaths))
+# # adjustment of BC deaths which are mutiplied by 100
+# db_can <- db_can %>% 
+#   mutate(Deaths = ifelse(Code == "CA_BC" & Date %in% ymd(c("2020-04-28", "2020-04-29")), Deaths / 100, Deaths))
 
 ##########################
 
-# estimating new cases and new deaths
-db_can2 <- db_can %>% 
-  arrange(Region, Sex, Date) %>% 
-  group_by(Region, Sex) %>% 
-  mutate(new_c = Cases - lag(Cases),
-         new_d = Deaths - lag(Deaths)) %>% 
-  ungroup()
-
-# CFRs
-db_can3 <- db_can2 %>% 
-  mutate(CFR = Deaths / Cases)
-
-# saving database
-write_rds(db_can3, "Output/canada_cases_deaths.rds")
+# # estimating new cases and new deaths
+# db_can2 <- db_can %>% 
+#   arrange(Region, Sex, Date) %>% 
+#   group_by(Region, Sex) %>% 
+#   mutate(new_c = Cases - lag(Cases),
+#          new_d = Deaths - lag(Deaths)) %>% 
+#   ungroup()
+# 
+# # CFRs
+# db_can3 <- db_can2 %>% 
+#   mutate(CFR = Deaths / Cases)
+# 
+# # saving database
+# write_rds(db_can3, "Output/canada_cases_deaths.rds")
 
 
 ######################################################
@@ -136,27 +168,27 @@ db_prv_age <- db_prv %>%
 #   summarise(Value = sum(Value)) %>% 
 #   ungroup()
 
-db_nal_age <- db_nal %>% 
-  filter(Age != "TOT",
-         Date > "2020-07-07") %>% 
-  group_by(Region, Code, Sex, Date, Age, Measure) %>% 
-  summarise(Value = sum(Value)) %>% 
-  mutate(Age = as.integer(Age)) %>% 
-  ungroup() %>% 
-  spread('Measure', 'Value')
-  
+# db_nal_age <- db_nal %>% 
+#   filter(Age != "TOT",
+#          Date > "2020-07-07") %>% 
+#   group_by(Region, Code, Sex, Date, Age, Measure) %>% 
+#   summarise(Value = sum(Value)) %>% 
+#   mutate(Age = as.integer(Age)) %>% 
+#   ungroup() %>% 
+#   spread('Measure', 'Value')
+#   
 # db_nal_age <- bind_rows(db_nal_age20, db_nal_age10) %>% 
 #   spread('Measure', 'Value') %>% 
 #   mutate(date_f = dmy(Date)) %>% 
 #   arrange(date_f, Age)
 
-# Provintial data with closing age group at 80+
-db_prv_age <- db_prv_age %>% 
-  mutate(Age = ifelse(Age >= 80, 80, Age)) %>% 
-  group_by(Region, Code, Sex, Date, Age) %>% 
-  summarise(Cases = sum(Cases),
-            Deaths = sum(Deaths)) %>% 
-  ungroup()
+# # Provintial data with closing age group at 80+
+# db_prv_age <- db_prv_age %>% 
+#   mutate(Age = ifelse(Age >= 80, 80, Age)) %>% 
+#   group_by(Region, Code, Sex, Date, Age) %>% 
+#   summarise(Cases = sum(Cases),
+#             Deaths = sum(Deaths)) %>% 
+#   ungroup()
 
 # Quebec with problems in dates 16.05 and 23.05
 db_prv_age <- db_prv_age %>% 
@@ -178,6 +210,7 @@ db_can_age <- bind_rows(db_prv_age, db_nal_age) %>%
   drop_na()
 
 # estimating new cases and new deaths
+#####################################
 db_can_age2 <- db_can_age %>% 
   arrange(Region, Sex, Age, Date) %>% 
   group_by(Region, Sex, Age) %>% 

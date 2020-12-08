@@ -12,17 +12,10 @@ library(scales)
 unique(db_m_age3$Region)
 levs <- c("Canada", "Alberta", "British Columbia", "Ontario", "Quebec", "Quebec_isq")
 
+db_exc <- read_csv("Output/excess_weeks_8_29.csv")
 
-
-db_exc <- read_csv("Output/excess_weeks_8_27.csv")
-
-# OSF Data - Output_5
-osf_retrieve_file("7tnfh") %>%
-  osf_download(path = "Data/", conflicts = "overwrite") 
-
-db_can <-  read_csv("Data/Output_5.zip",
-                    skip = 3,
-                    col_types = "ccccciiddd")
+db_cov <- read_rds("Output/covid_data_by_age_sex.rds") %>% 
+  filter(Country == "Canada")
 
 db_exc_all <- db_exc %>% 
   filter(Age != "All") %>% 
@@ -36,22 +29,18 @@ db_exc_all <- db_exc %>%
   gather(Excess, lp, up, key = "Source", value = "Deaths")
   
 # looking for regions included in COVerAGE-DB
-db_can2 <- db_can %>% 
-  filter(Country == "Canada") %>% 
-  mutate(Code = str_replace(Code, Date, ""),
-         Date = dmy(Date)) %>% 
-  select(-Tests) %>% 
-  filter(Date == "2020-07-09",
-         Region != "Montreal")
+db_cov2 <- db_cov %>% 
+  filter(!(Region %in% c("Montreal", "Toronto")))
 
-db_can_all <- db_can2 %>% 
+unique(db_cov2$Region)
+
+db_cov_all <- db_cov2 %>% 
   group_by(Region, Sex) %>% 
   summarise(Deaths = sum(Deaths)) %>% 
   ungroup() %>% 
-  mutate(Source = "Diagnosed",
-         Region = ifelse(Region == "All", "Canada", Region))
+  mutate(Source = "Diagnosed")
 
-isq <- db_can_all %>% 
+isq <- db_cov_all %>% 
   filter(Region == "Quebec") %>% 
   mutate(Region = "Quebec_isq")
 
@@ -60,7 +49,7 @@ isq <- db_can_all %>%
 # Ratios excess/confirmed
 ############################
 
-db_deaths <- bind_rows(db_can_all, isq, db_exc_all) %>% 
+db_deaths <- bind_rows(db_cov_all, isq, db_exc_all) %>% 
   mutate(Region = factor(Region, levels = levs))
 
 db_deaths2 <- db_deaths %>% 
@@ -82,7 +71,7 @@ db_exc_age <- db_exc %>%
 unique(db_exc_age$Age)
 unique(db_exc_age$Region)
 
-db_can_age <- db_can2 %>% 
+db_cov_age <- db_cov2 %>% 
   select(Region, Sex, Age, Deaths) %>% 
   mutate(Age = case_when(Age < 45 ~ 0,
                          Age >= 45 & Age < 65 ~ 45,
@@ -96,7 +85,7 @@ db_can_age <- db_can2 %>%
          Age = as.character(Age)) %>% 
   drop_na()
 
-db_isq_age <- db_can2 %>% 
+db_isq_age <- db_cov2 %>% 
   select(Region, Sex, Age, Deaths) %>% 
   filter(Region == "Quebec") %>% 
   mutate(Age = case_when(Age < 49 ~ 0,
@@ -110,7 +99,7 @@ db_isq_age <- db_can2 %>%
          Age = as.character(Age)) %>% 
   drop_na()
 
-db_d_age <- bind_rows(db_can_age, db_exc_age, db_isq_age) %>% 
+db_d_age <- bind_rows(db_cov_age, db_isq_age, db_exc_age) %>% 
   mutate(Age = case_when(Region != "Quebec_isq" & Age == "0" ~ "0-44",
                          Region != "Quebec_isq" & Age == "45" ~ "45-64",
                          Region != "Quebec_isq" & Age == "65" ~ "65-84",
@@ -167,7 +156,7 @@ exps <- db_exc %>%
   filter(Age != "All") %>% 
   select(Region, Sex, Age, Exposure)
 
-db_m_age <- bind_rows(db_can_age, db_exc_age, db_isq_age) %>% 
+db_m_age <- bind_rows(db_cov_age, db_exc_age, db_isq_age) %>% 
   left_join(exps) %>% 
   mutate(Age = case_when(Region != "Quebec_isq" & Age == "0" ~ "0-44",
                          Region != "Quebec_isq" & Age == "45" ~ "45-64",

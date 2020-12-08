@@ -10,23 +10,13 @@ library(osfr)
 
 # COVID deaths and infections for Canada and provinces
 db_ifrs <- read_rds("Output/ifr_age_sex_canada.rds")
-db_can_age <- read_rds("Output/cfr_by_age_sex.rds")
-
-# OSF Data - Output_10
-osf_retrieve_file("43ucn") %>%
-  osf_download(path = "Data/", conflicts = "overwrite") 
-
-db_cov <-  read_csv("Data/Output_10.zip",
-                    skip = 3,
-                    col_types = "ccccciiddd")
+db_cov <- read_rds("Output/covid_data_by_age_sex.rds") 
 
 db_can_age <- db_cov %>% 
   filter(Country == "Canada") %>% 
-  mutate(Code = str_replace(Code, Date, ""),
-         Date = dmy(Date)) %>% 
-  select(-Tests) %>% 
-  filter(Region != "Montreal") %>% 
-  mutate(Age = ifelse(Age >= 90, 90, Age)) %>% 
+  filter(!(Region %in% c("Montreal", "Toronto"))) %>% 
+  mutate(Age = ifelse(Age >= 90, 90, Age),
+         Age = floor(Age / 10) * 10) %>% 
   group_by(Region, Date, Sex, Age) %>% 
   summarise(Cases = sum(Cases),
             Deaths = sum(Deaths)) %>% 
@@ -40,35 +30,23 @@ unique(db_can_age$Sex)
 db_can_age2 <- db_can_age %>% 
   select(Region, Date, Sex, Age, Cases, Deaths) %>% 
   arrange(Region, Date, Sex, Age) %>% 
-  mutate(Region = ifelse(Region == 'British Columbia', "BC", Region)) %>% 
   group_by(Region, Date, Sex) %>%  
   mutate(Deaths_all = sum(Deaths)) %>% 
   ungroup() %>% 
   filter(Deaths_all > 0)
 
-# looking for dates common to all regions
-dates_all <- db_can_age2 %>% 
-  select(Region, Date) %>% 
-  unique() %>% 
-  mutate(n = 1) %>% 
-  spread(Region, n) %>% 
-  mutate(av = Alberta + BC + Ontario + Quebec + All) %>% 
-  filter(av == 5) %>% 
-  select(Date)
-
-# date closest to the end of first wave (end June - begining July)
-end_wave <- "2020-07-16"
-
 # Adjusting IFRs in 10-year age groups
 db_ifrs2 <- db_ifrs %>% 
-  mutate(Age = Age - 5) %>% 
+  mutate(Age = Age - 5,
+         Region = case_when(Region == 'BC' ~ "British Columbia", 
+                            Region == 'All' ~ "Canada", 
+                            TRUE ~ Region)) %>% 
   filter(Age %in% seq(0, 90, 10)) %>% 
   spread(Est, IFR)
 
 # Merging IFRs and Canada data
 db_infs <- db_can_age2 %>% 
-  filter(Date == end_wave,
-         round(Deaths, 0) != 0) %>% 
+  filter(round(Deaths, 0) > 20) %>% 
   left_join(db_ifrs2) %>% 
   mutate(Infs_l = Deaths / upper,
          Infs = Deaths / Central,
@@ -129,6 +107,6 @@ db_infs_can %>%
     strip.background = element_rect(fill = "transparent")
   )
 
-ggsave("Figures/underest_infections.png", width = 5, height = 3.5)
+ggsave("Figures/underest_infe0tions.png", width = 5, height = 3.5)
 
 

@@ -142,6 +142,28 @@ db_canada2 %>%
 
 # harmonizing age groups
 ########################
+
+db_harm2 <- tibble()
+
+for(pp in c("Ontario", "Toronto", "Alberta")){
+  for(ms in c("Cases", "Deaths")){
+    for(sx in c("f", "m")){
+      chunk <- db_canada2 %>% 
+        filter(Region == pp,
+               Measure == ms,
+               Sex == sx)
+      
+      db_harm <- harmonize_age(chunk) %>% 
+        mutate(Region = pp,
+               Measure = ms,
+               Sex = sx)
+      
+      db_harm2 <- bind_rows(db_harm2, db_harm)
+      
+    }
+  }
+}
+
 db_harm2 %>% 
   group_by(Region, Measure) %>% 
   summarise(sum(Value))
@@ -150,8 +172,10 @@ db_canada2 %>%
   group_by(Region, Measure) %>% 
   summarise(sum(Value))
 
+age_int <- 5
+
 db_harm3 <- db_harm2 %>% 
-  mutate(Age = floor(Age / 5) * 5) %>%
+  mutate(Age = floor(Age / age_int) * age_int) %>%
   group_by(Region, Measure, Sex, Age) %>%
   summarise(Value = sum(Value)) %>% 
   ungroup() %>% 

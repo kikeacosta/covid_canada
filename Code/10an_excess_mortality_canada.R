@@ -14,10 +14,10 @@ db_baseline <- read_csv(paste0("Output/baseline_mortality_", ym, ".csv"),
                         col_types = cols(Age = col_character()))
 
 # excess mortality by age since the beginning of the pandemic in Canada, 
-# February 22 (week 8),until the end of the first wave, July 4 (week 27)
+# February 22 (week 8),until the end of the first wave, July 18 (week 29)
 first_week <- 8
-last_week <- 27
-last_week_ont <- 27
+last_week <- 29
+last_week_ont <- 29
 weeks <- last_week - first_week + 1
 weeks_ont <- last_week_ont - first_week + 1
 
@@ -98,5 +98,5 @@ db_exc2 %>%
 
 
 # saving excess mortality 
-write_csv(db_exc2, "Output/excess_weeks_8_27.csv")
+write_csv(db_exc2, "Output/excess_weeks_8_29.csv")
 

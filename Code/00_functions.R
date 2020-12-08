@@ -84,26 +84,6 @@ harmonize_age <- function(db, lambda = 100){
   return(out)
 }
 
-db_harm2 <- tibble()
-
-for(pp in c("Ontario", "Toronto", "Alberta")){
-  for(ms in c("Cases", "Deaths")){
-    for(sx in c("f", "m")){
-      chunk <- db_canada2 %>% 
-        filter(Region == pp,
-               Measure == ms,
-               Sex == sx)
-      
-      db_harm <- harmonize_age(chunk) %>% 
-        mutate(Region = pp,
-               Measure = ms,
-               Sex = sx)
-      
-      db_harm2 <- bind_rows(db_harm2, db_harm)
-      
-    }
-  }
-}
 
 # Kitagawa decomposition
 ########################

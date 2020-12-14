@@ -184,3 +184,15 @@ db_harm3 <- db_harm2 %>%
   mutate(Date = "2020-07-15")
 
 write_rds(db_harm3, "Output/db_on_to_ab_cases&deaths.rds")
+
+
+# testing Alberta data
+db_harm3 %>% 
+  filter(Region == "Alberta",
+         Measure == "Cases") %>% 
+  mutate(Value = ifelse(Sex == "f", Value, -1*Value)) %>% 
+  ggplot()+
+  geom_area(aes(Age, Value, fill = Sex, col = Sex), alpha = 0.7)
+  
+
+

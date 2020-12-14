@@ -139,12 +139,22 @@ test <- db %>%
   mutate(val_p = ifelse(Measure == "Cases", val_p * -1, val_p),
          Region = factor(Region, levels = lvs))
 
+
+
+test %>% 
+  filter(Region == "Alberta",
+         Measure == "Cases") %>% 
+  mutate(Value = ifelse(Sex == "f", Value, -1*Value)) %>% 
+  ggplot()+
+  geom_area(aes(Age, Value, fill = Sex, col = Sex), alpha = 0.7)
+
 cols <- c("#2a9d8f", "#e76f51")
 
 test %>% 
   ggplot()+
   geom_bar(aes(Age, val_p, fill = Measure, col = Measure), stat = "identity", alpha = 0.5)+
   geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 1)+
+  scale_x_continuous(breaks = seq(0, 100, 20))+
   facet_wrap(~ Region)+
   coord_flip()+
   scale_fill_manual(values = cols)+
@@ -159,9 +169,9 @@ test %>%
     legend.key.size = unit(0.5,"line"),
     strip.background = element_rect(fill="transparent"),
     strip.text = element_text(size = tx - 2),
-    axis.text.x = element_text(size = tx - 1),
+    axis.text.x = element_text(size = tx - 1.5),
     axis.text.y = element_text(size = tx - 1),
     axis.title.x = element_text(size = tx + 1),
     axis.title.y = element_text(size = tx + 1)
   )
-ggsave("Figures/age_distribution.png", width = 5, height = 5)
+ggsave("Figures/age_distribution.png", width = 5, height = 6)

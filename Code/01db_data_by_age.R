@@ -29,7 +29,6 @@ db_cov <-  read_csv("Data/Output_5.zip",
 # adjusted data from Ontario and Alberta
 db_on_ab <- read_rds("Output/db_on_to_ab_cases&deaths.rds")
 
-
 # looking for regions included in COVerAGE-DB
 db_cov %>% 
   filter(Country == "Canada") %>% 
@@ -108,7 +107,6 @@ db_prv3 <- db_prv2 %>%
   mutate(Region = ifelse(Region == "All", "Canada", Region),
          Country = "Canada") 
 
-
 # write_rds(db_prv4, "Output/cfr_by_age_sex.rds")
 
 #######################################
@@ -179,3 +177,4 @@ out <- db_prv3 %>%
   bind_rows(cts_sample)
 
 write_rds(out, "Output/covid_data_by_age_sex.rds")
+

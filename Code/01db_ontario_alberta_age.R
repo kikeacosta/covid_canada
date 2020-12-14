@@ -129,7 +129,9 @@ db_ab3 <- bind_rows(db_ab_deaths, db_ab_cases) %>%
 
 db_canada <- bind_rows(db_ab3, db_on3, db_to3)
 
-db_canada2 <- distribute_unknwons(db_canada)
+db_canada2 <- distribute_unknwons(db_canada) %>% 
+  mutate(Age = as.numeric(Age)) %>% 
+  arrange(Region, Measure, Sex, Age)
 
 db_canada %>% 
   group_by(Region, Measure) %>% 

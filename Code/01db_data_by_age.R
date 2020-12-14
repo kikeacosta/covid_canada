@@ -128,7 +128,7 @@ cds <- c("DE_",
          "NL",
          "SE",
          "ITbol",
-         "BE",
+         "CH",
          "US_NYC",
          "DE_BE_",
          "US")
@@ -156,7 +156,7 @@ dates <- db_cov3 %>%
 
 cts_sample <- db_cov3 %>% 
   filter(((Code == "DE_" | 
-             Code == "BE" | 
+             Code == "CH" | 
              Code == "DK" | 
             Code == "SE" | 
             Code == "US_NYC" | 
@@ -165,7 +165,7 @@ cts_sample <- db_cov3 %>%
            (Code == "ITbol" & Date == "2020-07-14") | 
            (Code == "NL" & Date == "2020-07-12") | 
            (Code == "US" & Date == "2020-06-27")) %>% 
-  mutate(Region = case_when(Code == "BE" ~ "Belgium",
+  mutate(Region = case_when(Code == "CH" ~ "Switzerland",
                             Code == "DK" ~ "Denmark",
                             Code == "DE_" ~ "Germany",
                             Code == "ITbol" ~ "Italy",

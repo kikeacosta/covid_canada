@@ -47,7 +47,7 @@ s <- "b"
 # Across countries
 ##################
 
-rgs <- c("Belgium",
+rgs <- c("Switzerland",
          "Denmark",
          "Germany",
          "Italy",
@@ -92,3 +92,76 @@ rfs <- c("Montreal",
 db_cities <- diffs_ref(db_can_oth, rfs, rgs, "Cities", 2.7)
 
 
+
+# Provinces vs countries
+########################
+
+rgs <- c("Switzerland",
+         "Denmark",
+         "Germany",
+         "Italy",
+         "Netherlands",
+         "Sweden",
+         "USA")
+
+rfs <- c("Ontario",
+         "Quebec")
+
+diffs_ref(db_can_oth, rfs, rgs, "Provs_ctrs", 4)
+
+unique(test$Region)
+
+
+lvs <- c("Canada", 
+         "Switzerland",
+         "Denmark",
+         "Germany",
+         "Italy",
+         "Netherlands",
+         "Sweden",
+         "USA",
+         "Alberta",
+         "British Columbia",
+         "Ontario",
+         "Quebec",
+         "Montreal",
+         "Toronto", 
+         "Berlin", 
+         "NYC")
+
+
+test <- db %>% 
+  filter(Sex == "b") %>% 
+  gather(Cases, Deaths, key = "Measure", value = Value) %>% 
+  group_by(Region, Measure) %>% 
+  mutate(val_p = Value / sum(Value)) %>% 
+  ungroup() %>% 
+  mutate(val_p = ifelse(Measure == "Cases", val_p * -1, val_p),
+         Region = factor(Region, levels = lvs))
+
+cols <- c("#2a9d8f", "#e76f51")
+
+test %>% 
+  ggplot()+
+  geom_bar(aes(Age, val_p, fill = Measure, col = Measure), stat = "identity", alpha = 0.5)+
+  geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 1)+
+  facet_wrap(~ Region)+
+  coord_flip()+
+  scale_fill_manual(values = cols)+
+  scale_color_manual(values = cols)+
+  labs(x = "Age",
+       y = "Distribution")+
+  theme_bw()+
+  theme(
+    legend.position="bottom",
+    legend.title = element_text(size = tx),
+    legend.text = element_text(size = tx - 1),
+    legend.key.size = unit(0.5,"line"),
+    strip.background = element_rect(fill="transparent"),
+    strip.text = element_text(size = tx - 2),
+    axis.text.x = element_text(size = tx - 1),
+    axis.text.y = element_text(size = tx - 1),
+    axis.title.x = element_text(size = tx + 1),
+    axis.title.y = element_text(size = tx + 1)
+  )
+ggsave("Figures/age_distribution.png", width = 5, height = 5)

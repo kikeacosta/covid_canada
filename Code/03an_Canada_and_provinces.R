@@ -9,6 +9,8 @@ library(scales)
 library(lubridate)
 library(zoo)
 
+d_max <- "2020-12-10"
+
 # population data from StatCan
 pop <- read_csv(unzip("Data/17100005-eng.zip", "17100005.csv"))
 
@@ -71,7 +73,7 @@ c_qc2 <- c_qc %>%
          c1 = 2,
          c2 = 3) %>% 
   separate(date, c("date", "trash"), sep = " ") %>% 
-  mutate(date = mdy(date),
+  mutate(date = ymd(date),
          cases = c1 + c2,
          province = "Quebec") %>% 
   select(province, date, cases)
@@ -95,7 +97,11 @@ atlantic <- c("New Brunswick", "Newfoundland and Labrador", "Nova Scotia", "Prin
 western <- c("Alberta", "Manitoba", "Saskatchewan", "British Columbia") 
 prairies <- c("Manitoba", "Saskatchewan") 
 
-exclude <- c("Diamond Princess", "Grand Princess", "Ontario", "Quebec")  
+exclude <- c("Diamond Princess", 
+             "Grand Princess", 
+             "Ontario", 
+             "Quebec", 
+             "Repatriated Travellers")  
 
 #### All data togethter
 db1 <- db_c %>%
@@ -127,6 +133,7 @@ db1 <- db_c %>%
   ungroup()
 
 max_date <- db1 %>% 
+  drop_na(date) %>% 
   group_by(province) %>% 
   summarise(max_date = max(date)) %>% 
   ungroup() %>% 
@@ -166,6 +173,8 @@ exc <- c("Territories")
 ctrs <- db2 %>% filter(!(province %in% exc)) %>% pull(province) %>% unique()
 
 db3 <- NULL
+c <- 
+
 for(c in ctrs){
   
   temp <- db2 %>% 
@@ -231,7 +240,7 @@ db3 %>%
   ggplot()+
   geom_line(aes(date, new_c_pcp_sm, col = province), size = .5, alpha = .9) +
   geom_point(data = db_terr, aes(date, new_c_pcp, col = province), size = .7, alpha = .8) +
-  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
+  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   # geom_text_repel(data = labs,
   #                 aes(date, new_c_pcp_sm, label = province, col = province), size = 1.7, segment.color = NA, 
@@ -270,7 +279,7 @@ db3 %>%
   ggplot(aes(date, new_d_pcp_sm, col = province))+
   geom_line(size = .5, alpha = .9) +
   # scale_y_log10(expand = expansion(add = c(0,0.1))) +
-  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
+  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   # geom_text_repel(data = labs,
   #                 aes(date, new_d_pcp_sm, label = province), size = 1.7, segment.color = NA, 
@@ -317,7 +326,7 @@ db_t2 <- db_t %>%
   group_by(province) %>% 
   mutate(days = 1:n()) %>% 
   ungroup() %>% 
-  filter(date <= "2020-11-23")
+  filter(date <= d_max) %>% 
   drop_na()
 
 # smoothing with splines
@@ -382,7 +391,7 @@ db_t5 %>%
   geom_line(aes(date, pos, col = province), size = .5, alpha = .9) +
   geom_point(data = pos_terr, aes(date, pos, col = province), size = .7, alpha = .8) +
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
-  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
+  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   # geom_text_repel(data = labs,
   #                 aes(date, pos, label = province, col = province), size = 1.7, segment.color = NA, 
@@ -406,21 +415,49 @@ db_t5 %>%
 ggsave("Figures/pos_rate_provinces.png", width = 5, height = 1.4)
 
 # CFR by province
-db4 <- db2 %>% 
+cfrs <- db2 %>% 
   filter(deaths > 0) %>% 
-  mutate(CFR = deaths / cases)
+  mutate(cfr = deaths / cases) %>% 
+  select(province, days, date, cfr)
 
-labs <- db4 %>%
+cfrs_2 <- NULL
+c <- "Quebec"
+for(c in ctrs){
+  
+  temp <- cfrs %>% 
+    filter(province == c)
+  
+  xs <- temp %>% pull(days)
+  ys <- temp %>% pull(cfr) %>% log()
+  db_cfr_sm <- spline_this(xs, ys, 0.0000001) %>% 
+    mutate(country = c,
+           sm = exp(sm)) %>% 
+    rename(cfr_sm = sm)
+  
+  temp2 <- temp %>% 
+    left_join(db_cfr_sm)
+  
+  cfrs_2 <- cfrs_2 %>% bind_rows(temp2) 
+  
+}
+
+cfrs_2 %>%
+  filter(country == "Quebec") %>% 
+  ggplot()+
+  geom_line(aes(date, cfr_sm)) +
+  geom_point(aes(date, cfr))
+
+labs <- cfrs_2 %>%
   group_by(province) %>% 
   filter(date == max(date)) %>% 
   mutate(date = date + 3)
 tx <- 8
 
-db4 %>%
-  ggplot(aes(date, CFR, col = province))+
+cfrs_2 %>%
+  ggplot(aes(date, cfr_sm, col = province))+
   geom_line(size = .5, alpha = .8) +
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
-  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
+  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   scale_colour_manual(values = col_country)+
   annotate(geom = "text", label = "D", 

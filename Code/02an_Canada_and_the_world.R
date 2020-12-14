@@ -7,6 +7,9 @@ library(tidyverse)
 library(ggrepel)
 library(scales)
 library(lubridate)
+
+d_max <- "2020-12-10"
+
 # population data from UN's 2019 Revision of World Population Prospects
 # https://population.un.org/wpp/Download/Standard/Population/
 pop <- read_csv("data/pop_ctry_wpp.csv") %>% 
@@ -51,15 +54,14 @@ corona_cases <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID
                              TRUE ~ country))
 
 
-ctrs <- c("Canada", 
-          "Belgium",
-          "Denmark", 
+ctrs <- c("Denmark", 
+          "Germany",
+          "Italy",
           "Netherlands",
           "Sweden",
+          "Switzerland",
           "US",
-          "Italy",
-          "Germany")
-
+          "Canada")
 
 #### All data togethter
 db1 <- corona_cases %>%
@@ -73,7 +75,8 @@ db1 <- corona_cases %>%
   mutate(new_c = ifelse(new_c < 0, 0, new_c),
          new_d = ifelse(new_d < 0, 0, new_d),
          new_c_pcp = 1000000 * (new_c + 1) / pop,
-         new_d_pcp = 1000000 * (new_d + 1) / pop) %>% 
+         new_d_pcp = 1000000 * (new_d + 1) / pop,
+         country = factor(country, levels = ctrs)) %>% 
   filter(cases > 1) %>% 
   group_by(country) %>% 
   mutate(days = 1:n()) %>% 
@@ -82,7 +85,7 @@ db1 <- corona_cases %>%
 min_d <- 5
 min_c <- 5
 
-c <- "Belgium"
+c <- "Switzerland"
 db2 <- NULL
 for(c in ctrs){
 
@@ -126,7 +129,7 @@ ggsave("Figures/new_cases_world_no_Bel.png", width = 5, height = 1.4)
 
 unique(db2$country)
 
-col_country <- c("Belgium" = "#666666",
+col_country <- c("Switzerland" = "#666666",
                  "Canada" = "black",
                  "Denmark" = "#1b9e77", 
                  "Italy" = "#d95f02", 
@@ -138,7 +141,7 @@ col_country <- c("Belgium" = "#666666",
 d_x <- 0
 d_xend <- max(db2$date) - 5
 # d_y <- min_rate
-d_yend <- min_rate * (1 + log(2) / 2) ^ d_xend
+# d_yend <- min_rate * (1 + log(2) / 2) ^ d_xend
 
 date <- Sys.Date()
 limx <- max(db2$date) + 4
@@ -150,10 +153,11 @@ labs <- db2 %>%
   mutate(date = date + 5)
 
 db2 %>%
+  mutate(country = factor(country, levels = ctrs)) %>% 
   ggplot(aes(date, new_c_pcp_sm, col = country))+
   geom_line(size = .5, alpha = .9) +
-  scale_y_continuous() +
-  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
+  scale_y_continuous(limits = c(0, 600)) +
+  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   # geom_text_repel(data = labs,
   #                 aes(date, new_c_pcp_sm, label = country), size = 1.5, segment.color = NA, 
@@ -173,7 +177,7 @@ db2 %>%
     axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/new_cases_world_no_Bel.png", width = 5, height = 1.4)
+ggsave("Figures/new_cases_world.png", width = 5, height = 1.4)
 
 labs <- db2 %>%
   group_by(country) %>% 
@@ -181,10 +185,11 @@ labs <- db2 %>%
   mutate(date = date + 3)
 
 db2 %>%
+  mutate(country = factor(country, levels = ctrs)) %>% 
   ggplot(aes(date, new_d_pcp_sm, col = country))+
   geom_line(size = .5, alpha = .9) +
-  scale_y_continuous(limits = c(0, 30)) +
-  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
+  scale_y_continuous(limits = c(0, 15)) +
+  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   # geom_text_repel(data = labs,
   #                 aes(date, new_d_pcp_sm, label = country), size = 1.5, segment.color = NA, 
@@ -210,61 +215,63 @@ db_t <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv",
                   col_types = cols(.default = "c")) 
 
 
-ctrs <- c("Belgium", 
-          "Canada", 
-          "Denmark", 
-          "Netherlands",
-          "Sweden",
-          "US",
-          "Italy",
-          "Germany")
-
-
+# ctrs <- c("Switzerland", 
+#           "Canada", 
+#           "Denmark", 
+#           "Netherlands",
+#           "Sweden",
+#           "US",
+#           "Italy",
+#           "Germany")
 
 unique(db_t$location) %>% sort()
 
 db_t2 <- db_t %>% 
-  select(location, date, positive_rate) %>% 
+  rename(country = location) %>% 
+  select(country, date, positive_rate) %>% 
   mutate(date = ymd(date),
          pos = as.numeric(positive_rate),
-         location = ifelse(location == "United States", "US", location)) %>% 
-  filter(location %in% ctrs) %>% 
-  drop_na() %>% 
-  rename(country = location) %>% 
+         country = ifelse(country == "United States", "US", country)) %>% 
+  filter(country %in% ctrs,
+         date >= "2020-03-01") %>% 
   group_by(country) %>% 
   mutate(days = 1:n()) %>% 
-  ungroup()
+  ungroup() %>% 
+  drop_na()
 
 unique(db_t2$country) %>% sort()
 
 db_t3 <- NULL
-c <- "Canada"
+c <- "US"
 for(c in ctrs){
   
   temp <- db_t2 %>% 
-    filter(country == c)
+    filter(country == c,
+           pos > 0)
   
   xs <- temp %>% pull(days)
   ys <- temp %>% pull(pos) %>% log()
+  
+  dates <- seq(min(temp$date),max(temp$date), by = '1 day')
+  
   db_pos_sm <- spline_this(xs, ys, 0.0000001) %>% 
     mutate(country = c,
-           sm = exp(sm)) %>% 
+           sm = exp(sm),
+           date = dates) %>% 
     rename(pos_sm = sm)
   
-  temp2 <- temp %>% 
-    left_join(db_pos_sm)
+  temp2 <- db_pos_sm %>% 
+    left_join(temp)
   
   db_t3 <- db_t3 %>% bind_rows(temp2) 
   
 }
 
 db_t3 %>%
-  filter(country == "Canada") %>% 
+  filter(country == "US") %>% 
   ggplot()+
   geom_line(aes(date, pos_sm)) +
   geom_point(aes(date, pos))
-
-
 
 labs <- db_t3 %>%
   group_by(country) %>% 
@@ -272,10 +279,11 @@ labs <- db_t3 %>%
   mutate(date = date + 3)
 
 db_t3 %>%
+  mutate(country = factor(country, levels = ctrs)) %>% 
   ggplot(aes(date, pos_sm, col = country))+
   geom_line(size = .5, alpha = .9) +
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
-  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
+  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   # geom_text_repel(data = labs,
   #                 aes(date, pos_sm, label = country), size = 1.5, segment.color = NA, 
@@ -307,29 +315,62 @@ cfrs <- corona_cases %>%
   left_join(pop) %>% 
   filter(country %in% ctrs,
          deaths > 1) %>% 
-  mutate(cfr = deaths / cases) %>% 
-  drop_na()
+  mutate(cfr = deaths / cases,
+         country = factor(country, levels = ctrs)) %>% 
+  drop_na() %>% 
+  group_by(country) %>% 
+  mutate(days = 1:n()) %>% 
+  ungroup()
+
+cfrs_2 <- NULL
+c <- "Switzerland"
+for(c in ctrs){
+  
+  temp <- cfrs %>% 
+    filter(country == c)
+  
+  xs <- temp %>% pull(days)
+  ys <- temp %>% pull(cfr) %>% log()
+  db_cfr_sm <- spline_this(xs, ys, 0.0000001) %>% 
+    mutate(country = c,
+           sm = exp(sm)) %>% 
+    rename(cfr_sm = sm)
+  
+  temp2 <- temp %>% 
+    left_join(db_cfr_sm)
+  
+  cfrs_2 <- cfrs_2 %>% bind_rows(temp2) 
+  
+}
+
+cfrs_2 %>%
+  filter(country == "Netherlands") %>% 
+  ggplot()+
+  geom_line(aes(date, cfr_sm)) +
+  geom_point(aes(date, cfr))
 
 labs <- cfrs %>%
   group_by(country) %>% 
   filter(date == max(date)) %>% 
   mutate(date = date + 3)
 
-cfrs %>%
-  ggplot(aes(date, cfr, col = country))+
-  geom_line(size = .5, alpha = .9) +
+cfrs_2 %>%
+  mutate(country = factor(country, levels = ctrs)) %>% 
+  ggplot(aes(date, cfr_sm, col = country))+
+  geom_line(aes(size = country), size = .5, alpha = .9) +
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
-  scale_x_date(limits = ymd(c("2020-03-01", "2020-12-01")), date_breaks = "1 month", date_labels = "%m/%y")+
-  theme_bw()+
+  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
   # geom_text_repel(data = labs,
   #                 aes(date, cfr, label = country), size = 1.5, segment.color = NA, 
   #                 nudge_y = 0, nudge_x = 0, hjust = 0, force = 1.5, direction = "y", fontface = "bold") +
   scale_colour_manual(values = col_country)+
+  scale_size_manual(values = c(1,1,1,1,1,1,1,2))+
   annotate(geom = "text", label = "D", 
            x = ymd("2020-03-01"), y = Inf, hjust = 0.5, vjust = 2)+
   labs(x = "Date",
        y = "Overall CFR",
        color = 'Country')+
+  theme_bw()+
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "bottom",

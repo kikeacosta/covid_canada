@@ -21,8 +21,9 @@ interpop <- function(db){
 spline_this <- function(xs, ys, l){
   # smoothing remaining life exp
   md <- smooth.spline(x = xs, y = ys, lambda = l)
-  res <- tibble(days = xs,
-                sm = predict(md, xs)$y)
+  new_xs <- seq(min(xs), max(xs))
+  res <- tibble(days = new_xs,
+                sm = predict(md, new_xs)$y)
   return(res)
 }
 
@@ -230,7 +231,6 @@ apply_kitagawa <- function(db_d1, db_d2){
   
   return(result)
 }
-
 
 diffs_ref <- function(db, rfs, rgs, geo_level, h){
   db_diffs_all <- NULL

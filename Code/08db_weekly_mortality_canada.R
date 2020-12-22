@@ -85,6 +85,7 @@ dates_w2 <- dates_w %>%
 weeks2 <- bind_cols(dates_w2, weeks) %>% 
   mutate(t = 1:n())
 
+write_csv(weeks2, "Output/date_weeks_2010_2020.csv")
 
 # Quebec data
 qc2 <- qc %>% 

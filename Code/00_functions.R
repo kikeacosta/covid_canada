@@ -21,9 +21,8 @@ interpop <- function(db){
 spline_this <- function(xs, ys, l){
   # smoothing remaining life exp
   md <- smooth.spline(x = xs, y = ys, lambda = l)
-  new_xs <- seq(min(xs), max(xs))
-  res <- tibble(days = new_xs,
-                sm = predict(md, new_xs)$y)
+  res <- tibble(days = xs,
+                sm = predict(md, xs)$y)
   return(res)
 }
 
@@ -85,6 +84,26 @@ harmonize_age <- function(db, lambda = 100){
   return(out)
 }
 
+db_harm2 <- tibble()
+
+for(pp in c("Ontario", "Toronto", "Alberta")){
+  for(ms in c("Cases", "Deaths")){
+    for(sx in c("f", "m")){
+      chunk <- db_canada2 %>% 
+        filter(Region == pp,
+               Measure == ms,
+               Sex == sx)
+      
+      db_harm <- harmonize_age(chunk) %>% 
+        mutate(Region = pp,
+               Measure = ms,
+               Sex = sx)
+      
+      db_harm2 <- bind_rows(db_harm2, db_harm)
+      
+    }
+  }
+}
 
 # Kitagawa decomposition
 ########################
@@ -231,6 +250,7 @@ apply_kitagawa <- function(db_d1, db_d2){
   
   return(result)
 }
+
 
 diffs_ref <- function(db, rfs, rgs, geo_level, h){
   db_diffs_all <- NULL

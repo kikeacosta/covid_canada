@@ -145,7 +145,7 @@ db_ratios %>%
     strip.background = element_rect(fill = "transparent")
   )
 
-ggsave("Figures/deaths_covid_vs_excess_ratio_can_conf_int.png", width = 5, height = 4)
+ggsave("Figures/6_deaths_covid_vs_excess_ratio_can_conf_int.png", width = 5, height = 4)
 
 
 ###########

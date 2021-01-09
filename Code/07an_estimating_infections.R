@@ -46,7 +46,7 @@ db_ifrs2 <- db_ifrs %>%
 
 # Merging IFRs and Canada data
 db_infs <- db_can_age2 %>% 
-  filter(round(Deaths, 0) > 20) %>% 
+  filter(round(Deaths, 0) > 50) %>% 
   left_join(db_ifrs2) %>% 
   mutate(Infs_l = Deaths / upper,
          Infs = Deaths / Central,
@@ -107,6 +107,6 @@ db_infs_can %>%
     strip.background = element_rect(fill = "transparent")
   )
 
-ggsave("Figures/underest_infe0tions.png", width = 5, height = 3.5)
+ggsave("Figures/underest_infections.png", width = 5, height = 3.5)
 
 

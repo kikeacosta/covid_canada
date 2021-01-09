@@ -10,21 +10,13 @@ library(osfr)
 # reading Canada data
 #####################
 
-# # OSF Data - Output_10
-# osf_retrieve_file("43ucn") %>%
-#   osf_download(path = "Data/", conflicts = "overwrite") 
-# 
-# db_cov <-  read_csv("Data/Output_10.zip",
-#                     skip = 3,
-#                     col_types = "ccccciiddd")
 
 # OSF Data - Output_5
 osf_retrieve_file("7tnfh") %>%
   osf_download(path = "Data/", conflicts = "overwrite")
 
 db_cov <-  read_csv("Data/Output_5.zip",
-                    skip = 3,
-                    col_types = "ccccciiddd")
+                    skip = 3)
 
 # adjusted data from Ontario and Alberta
 db_on_ab <- read_rds("Output/db_on_to_ab_cases&deaths.rds")
@@ -121,8 +113,18 @@ last_dates <- db_cov2 %>%
   group_by(Country, Region, Code) %>% 
   summarise(last_date = max(Date))
 
+# library(covidAgeData)
+# cts <- c("Denmark", "Germany", "Italy", "Netherlands", "Spain", "Sweden", "Switzerland", "USA")
+
+# SCm <- read_subset_covid(
+#   zippath = "Data/Output_5.zip",
+#   data = "Output_5",
+#   Country = cts,
+#   Sex = "b")
+
 cds <- c("DE_",
          "DK",
+         "ES_",
          "NL",
          "SE",
          "ITbol",
@@ -135,6 +137,8 @@ db_cov3 <- db_cov2 %>%
   filter(Code %in% cds) %>% 
   select(-Tests, -AgeInt) %>% 
   drop_na()
+
+unique(db_cov3$Country)
 
 dates <- db_cov3 %>% 
   select(Code, Date) %>% 
@@ -156,9 +160,10 @@ cts_sample <- db_cov3 %>%
   filter(((Code == "DE_" | 
              Code == "CH" | 
              Code == "DK" | 
-            Code == "SE" | 
-            Code == "US_NYC" | 
-            Code == "DE_BE_") & 
+             Code == "ES_" | 
+             Code == "SE" | 
+             Code == "US_NYC" | 
+             Code == "DE_BE_") & 
            Date == "2020-07-15") | 
            (Code == "ITbol" & Date == "2020-07-14") | 
            (Code == "NL" & Date == "2020-07-12") | 
@@ -166,6 +171,7 @@ cts_sample <- db_cov3 %>%
   mutate(Region = case_when(Code == "CH" ~ "Switzerland",
                             Code == "DK" ~ "Denmark",
                             Code == "DE_" ~ "Germany",
+                            Code == "ES_" ~ "Spain",
                             Code == "ITbol" ~ "Italy",
                             Code == "NL" ~ "Netherlands",
                             Code == "SE" ~ "Sweden",

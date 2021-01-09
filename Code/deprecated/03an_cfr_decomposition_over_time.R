@@ -47,8 +47,8 @@ dates_all <- db_can_age2 %>%
 unique(db_can_age2$Region)
 # Two dates to evaluate the evolution of CFR
 
-d1 <- "2020-04-15"
-d2 <- "2020-07-16"
+d1 <- "2020-07-15"
+d2 <- "2020-12-31"
 c <- "BC"
 
 db_decomp <- NULL

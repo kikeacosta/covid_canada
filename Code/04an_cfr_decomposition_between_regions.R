@@ -47,7 +47,7 @@ s <- "b"
 # Across countries
 ##################
 
-rgs <- c("Switzerland",
+rgs <- c("Spain",
          "Denmark",
          "Germany",
          "Italy",
@@ -57,7 +57,7 @@ rgs <- c("Switzerland",
 
 rfs <- c("Canada")
 
-db_counts <- diffs_ref(db_can_oth, rfs, rgs, "Countries", 2.5)
+cfr_cts <- diffs_ref(db_can_oth, rfs, rgs, "Countries", 2.5)
 
 # Provinces and Canada
 ######################
@@ -67,7 +67,7 @@ rgs <- c("Alberta",
          "Ontario",
          "Quebec")
 rfs <- c("Canada")
-db_provs <- diffs_ref(db_can_oth, rfs, rgs, "Provinces", 2)
+cfr_provs <- diffs_ref(db_can_oth, rfs, rgs, "Provinces", 2)
 
 rgs <- c("Canada", 
          "Alberta",
@@ -78,7 +78,7 @@ rfs <- c("Alberta",
          "British Columbia",
          "Ontario",
          "Quebec")
-diffs_ref(db_can_oth, rfs, rgs, "Provinces", 5)
+cfr_provs2 <- diffs_ref(db_can_oth, rfs, rgs, "Provinces", 5)
 
 # Across cities
 ###############
@@ -89,14 +89,14 @@ rgs <- c("Montreal",
          "NYC")
 rfs <- c("Montreal", 
          "Toronto")
-db_cities <- diffs_ref(db_can_oth, rfs, rgs, "Cities", 2.7)
+cfr_cities <- diffs_ref(db_can_oth, rfs, rgs, "Cities", 2.7)
 
 
 
 # Provinces vs countries
 ########################
 
-rgs <- c("Switzerland",
+rgs <- c("Spain",
          "Denmark",
          "Germany",
          "Italy",
@@ -113,7 +113,7 @@ unique(test$Region)
 
 
 lvs <- c("Canada", 
-         "Switzerland",
+         "Spain",
          "Denmark",
          "Germany",
          "Italy",
@@ -128,7 +128,6 @@ lvs <- c("Canada",
          "Toronto", 
          "Berlin", 
          "NYC")
-
 
 test <- db %>% 
   filter(Sex == "b") %>% 

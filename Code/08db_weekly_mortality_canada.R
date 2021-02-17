@@ -176,7 +176,7 @@ table(inters_pop$Region)
 # Visual test
 #############
 
-r <- "Alberta"
+r <- "Quebec"
 a <- "50"
 s <- "f"
 
@@ -218,17 +218,6 @@ pop3 <- inters_pop %>%
 
 unique(pop3$Age)
 unique(pop3$Region)
-
-# r <- "Alberta"
-# a <- "85"
-# 
-# pop3 %>% 
-#   filter(Region == r,
-#          Age == a,
-#          Sex == "b") %>% 
-#   ggplot()+
-#   geom_line(aes(Year, Exposure))
-
 
 # population by age for Quebec data
 pop4 <- inters_pop %>% 

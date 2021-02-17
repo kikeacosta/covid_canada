@@ -52,40 +52,40 @@ db2 <- db %>%
 
 # Testing single populations
 ############################
-# c <- "Quebec_isq"
-# s <- "b"
-# a <- "0"
-# 
-# temp <- db2 %>%
-#   filter(Region == c,
-#          Sex == s,
-#          Age == a,
-#          Year >= ym)
-# 
-# test <- fit_baseline(temp)
-# 
-# test %>%
-#   ggplot()+
-#   geom_line(aes(Date, Deaths))+
-#   geom_ribbon(aes(Date, ymin = lp, ymax = up), fill = "#01BAEF", alpha = 0.25)+
-#   geom_line(aes(Date, Baseline), col = "#01BAEF", alpha = 0.9, size = 0.6)+
-#   scale_x_date(date_breaks = "1 year", date_minor_breaks = "1 year", date_labels = "%Y")+
-#   labs(title=paste0(c, "_", s, "_", a))+
-#   theme_bw()+
-#   theme(
-#     panel.grid.minor = element_blank(),
-#     plot.title = element_text(size=13),
-#     axis.text.x = element_text(size=10),
-#     axis.text.y = element_text(size=10),
-#     axis.title.x = element_text(size=11),
-#     axis.title.y = element_text(size=11))
+c <- "Quebec_isq"
+s <- "b"
+a <- "70"
+
+temp <- db2 %>%
+  filter(Region == c,
+         Sex == s,
+         Age == a,
+         Year >= ym)
+
+test <- fit_baseline(temp)
+
+test %>%
+  ggplot()+
+  geom_line(aes(Date, Deaths))+
+  geom_ribbon(aes(Date, ymin = lp, ymax = up), fill = "#01BAEF", alpha = 0.25)+
+  geom_line(aes(Date, Baseline), col = "#01BAEF", alpha = 0.9, size = 0.6)+
+  scale_x_date(date_breaks = "1 year", date_minor_breaks = "1 year", date_labels = "%Y")+
+  labs(title=paste0(c, "_", s, "_", a))+
+  theme_bw()+
+  theme(
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size=13),
+    axis.text.x = element_text(size=10),
+    axis.text.y = element_text(size=10),
+    axis.title.x = element_text(size=11),
+    axis.title.y = element_text(size=11))
 
 # Fitting all regions, sexes, and ages in Canada
 ################################################
 cts <- unique(db2$Region)
 cts <- c("Canada", "Quebec_isq")
 cts <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec", "Quebec_isq")
-# cts <- c("Canada", "Quebec_isq")
+cts <- c("Quebec_isq")
 
 db_all_blns <- NULL
 skip_to_next <- F

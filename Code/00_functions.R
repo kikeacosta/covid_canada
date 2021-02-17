@@ -477,7 +477,7 @@ fit_baseline <- function(db2) {
                 data = valid_base, 
                 contrain = "*", 
                 contrainTo = coef(reg1),
-                family=poisson(link="log"))
+                family = poisson(link="log"))
   
   sea1 = gnm(Deaths ~ ns(t, 3) + sn52 + cs52 + offset(log(Exposure)), 
              data = train_base, 

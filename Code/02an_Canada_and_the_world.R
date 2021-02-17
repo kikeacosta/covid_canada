@@ -7,6 +7,7 @@ library(tidyverse)
 library(ggrepel)
 library(scales)
 library(lubridate)
+library(zoo)
 
 d_max <- "2020-12-31"
 

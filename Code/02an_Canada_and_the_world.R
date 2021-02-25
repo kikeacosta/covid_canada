@@ -1,15 +1,6 @@
 rm(list=ls())
-Sys.setenv(LANG = "en")
-Sys.setlocale("LC_ALL","English")
 source("Code/00_functions.R")
-library(readxl)
-library(tidyverse)
-library(ggrepel)
-library(scales)
-library(lubridate)
-library(zoo)
-
-d_max <- "2020-12-31"
+d_max <- "2021-02-23"
 
 # population data from UN's 2019 Revision of World Population Prospects
 # https://population.un.org/wpp/Download/Standard/Population/
@@ -160,7 +151,7 @@ db2 %>%
   mutate(country = factor(country, levels = ctrs)) %>% 
   ggplot(aes(date, new_c_pcp_sm, col = country))+
   geom_line(size = .5, alpha = .9) +
-  scale_y_continuous(limits = c(0, 660)) +
+  scale_y_continuous(limits = c(0, 800)) +
   scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
   theme_bw()+
   scale_colour_manual(values = col_country)+
@@ -178,7 +169,7 @@ db2 %>%
     axis.title.y = element_text(size=tx-2)
   )
 
-# ggsave("Figures/1a_new_cases_world.png", width = 5, height = 1.4)
+ggsave("Figures/1a_new_cases_world.png", width = 5, height = 1.4)
 
 db2 %>%
   mutate(country = factor(country, levels = ctrs)) %>% 
@@ -202,7 +193,7 @@ db2 %>%
     axis.title.y = element_text(size=tx-2, margin = margin(0, 3, 0, 0,"mm"))
   )
 
-# ggsave("Figures/1b_new_deaths_world.png", width = 5, height = 1.4)
+ggsave("Figures/1b_new_deaths_world.png", width = 5, height = 1.4)
 
 db_t <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv",
                   col_types = cols(.default = "c")) 
@@ -295,7 +286,7 @@ db_t2 %>%
     axis.title.y = element_text(size=tx-2)
   )
 
-# ggsave("Figures/1c_pos_rate_world.png", width = 5, height = 1.4)
+ggsave("Figures/1c_pos_rate_world.png", width = 5, height = 1.4)
 
 
 # CFR over time
@@ -340,6 +331,8 @@ cfrs <- corona_cases %>%
 cfrs_2 <- cfrs %>% 
   mutate(cfr_sm = rollapply(cfr, 14, mean, align = 'center', fill = NA))
   
+d_max <- "2021-02-15"
+
 cfrs_2 %>%
   mutate(country = factor(country, levels = ctrs)) %>% 
   ggplot(aes(date, cfr_sm, col = country))+
@@ -371,7 +364,7 @@ cfrs_2 %>%
     axis.title.y = element_text(size=tx-2)
   )
 
-# ggsave("Figures/1d_all_CFR_world.png", width = 5, height = 2.3)
+ggsave("Figures/1d_all_CFR_world.png", width = 5, height = 2.3)
 
 cfrs_2 %>%
   filter(date == "2020-12-31") %>% 

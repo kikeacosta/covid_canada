@@ -21,6 +21,7 @@ db_cov <-  read_csv("Data/Output_5.zip",
 # adjusted data from Ontario and Alberta
 db_on_ab <- read_rds("Output/db_on_to_ab_cases&deaths.rds")
 
+
 # looking for regions included in COVerAGE-DB
 db_cov %>% 
   filter(Country == "Canada") %>% 
@@ -121,6 +122,45 @@ last_dates <- db_cov2 %>%
 #   data = "Output_5",
 #   Country = cts,
 #   Sex = "b")
+
+# # German data for 15-07-2020
+# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# # "https://docs.google.com/spreadsheets/d/1ojjUdXSYLG6wwY5aGS48QBKc_56z8gbgoewYILC1owE/edit#gid=1067163235"
+# db_ger <- read_sheet("https://docs.google.com/spreadsheets/d/1ojjUdXSYLG6wwY5aGS48QBKc_56z8gbgoewYILC1owE/edit#gid=1067163235")
+# 
+# db_ger2 <- db_ger %>% 
+#   mutate(Sex = case_when(Geschlecht == "M" ~ "m",
+#                          Geschlecht == "W" ~ "f",
+#                          Geschlecht == "unbekannt" ~ "UNK"),
+#          Age = case_when(Altersgruppe == "A00-A04" ~ "0",
+#                          Altersgruppe == "A05-A14" ~ "5",
+#                          Altersgruppe == "A15-A34" ~ "15",
+#                          Altersgruppe == "A35-A59" ~ "35",
+#                          Altersgruppe == "A60-A79" ~ "60",
+#                          Altersgruppe == "A80+" ~ "80",
+#                          Altersgruppe == "unbekannt" ~ "UNK"),
+#          date_f = ymd(str_sub(Meldedatum, 1, 10)),
+#          Cases = ifelse(AnzahlFall < 0, 0, AnzahlFall),
+#          Deaths = ifelse(AnzahlTodesfall < 0, 0, AnzahlTodesfall),
+#          Region = Bundesland) %>% 
+#   select(Sex, Age, Cases, Deaths, Region) %>% 
+#   pivot_longer(Cases:Deaths, names_to = "Measure", values_to ="Value") %>% 
+#   group_by(Region, Sex, Measure, Age) %>% 
+#   summarize(Value = sum(Value)) %>% 
+#   ungroup()
+# 
+# db_ger_all <- db_ger2 %>% 
+#   group_by(Sex, Measure, Age) %>% 
+#   summarize(Value = sum(Value)) %>% 
+#   ungroup() %>% 
+#   mutate(Region = "Germany")
+# 
+# db_berlin <- db_ger2 %>% 
+#   filter(Region == "Berlin")
+# 
+# db_ger3 <- bind_rows(db_ger_all, db_berlin)
+# 
+# write_rds(db_ger3, "Output/germany_berlin_20200715.rds")
 
 cds <- c("DE_",
          "DK",

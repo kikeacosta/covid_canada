@@ -10,9 +10,9 @@ drive_auth(email = email)
 gs4_auth(email = email)
 
 # Ontario and Toronto Jul 15
-on_ss <- "https://docs.google.com/spreadsheets/d/184p-O3YpI25v56SB5WJLZncsOP66II7OeCDRiDFy1oo/edit#gid=108695023"
+on_ss <- "https://docs.google.com/spreadsheets/d/1jy0I5FYEQ28xILTkqE5NomLINQV7ERSsxm7guaoZ81A/edit#gid=1086950234"
 # Alberta Jul 15
-ab_ss <- "https://docs.google.com/spreadsheets/d/18wmkW69-v1HLhB6DD79ULxliKS3w5q25iVnf8a8GGDs/edit#gid=573062633"
+ab_ss <- "https://docs.google.com/spreadsheets/d/1Q4YLL0l1RZ52gBR4M2LSXYOnXa38WLtKRvbLKS3rlC0/edit#gid=573062633"
 
 # Ontario
 #########

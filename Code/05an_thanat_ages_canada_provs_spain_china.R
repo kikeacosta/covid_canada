@@ -51,7 +51,7 @@ db_ex_ca2 <- db_ex_ca %>%
                             Region == "Ont. - " ~ "Ontario",
                             Region == "Alta. - " ~ "Alberta",
                             Region == "B.C. - " ~ "BC"),
-         Sex = case_when(Sex == "Both sexes" ~ "b",
+         Sex = case_when(Sex == "Both sexes" ~ "t",
                          Sex == "Males" ~ "m",
                          Sex == "Females" ~ "f"),
          Age = as.numeric(Age),
@@ -79,7 +79,7 @@ db_ex_es_b <- read_delim("Data/bltper_1x1.txt", delim = " ", skip = 1) %>%
          Age = 2,
          ex = 10) %>% 
   select(Year, Age, ex) %>% 
-  mutate(Sex = "b")
+  mutate(Sex = "t")
 
 db_ex_es <- bind_rows(db_ex_es_m, db_ex_es_f, db_ex_es_b) %>% 
   mutate(Year = as.numeric(Year),
@@ -108,7 +108,7 @@ db_ex_ch <- lt_1950_2020 %>%
   filter(Year == "2015-2020",
          Region == ctr) %>% 
   select(Region, Age, ex) %>% 
-  mutate(Sex = "b",
+  mutate(Sex = "t",
          ex = as.numeric(ex))
   
 # binding all together

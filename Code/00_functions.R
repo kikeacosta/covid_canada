@@ -1,6 +1,52 @@
 Sys.setenv(LANG = "en")
 Sys.setlocale("LC_ALL","English")
 
+# install pacman to streamline further package installation
+if(!require("pacman", character.only = TRUE)) {
+  install.packages("pacman", dep = TRUE)
+  if (!require("pacman", character.only = TRUE))
+    stop("Package pacman not found")
+}
+
+library(pacman)
+
+# Required CRAN packages
+pkgs <- c("tidyverse",
+          "here",
+          "lubridate",
+          "readxl",
+          "vroom",
+          "ungroup",
+          "HMDHFDplus",
+          "parallel",
+          "parallelsugar",
+          "ISOweek",
+          "scales",
+          "zoo",
+          "googlesheets4",
+          "osfr")
+
+
+# required packages for baseline estimation
+pkgs_bsl <- c("stats", 
+              "splines",
+              "MASS",
+              "gnm",
+              'doParallel', 
+              'foreach')
+
+
+# Install required CRAN packages if not available yet
+if(!sum(!p_isinstalled(c(pkgs, pkgs_bsl)))==0) {
+  p_install(
+    package = pkgs[!p_isinstalled(pkgs)], 
+    character.only = TRUE
+  )
+}
+
+# loading basic packages
+p_load(pkgs, character.only = TRUE)
+
 
 # weekly population interpolation
 #################################
@@ -313,14 +359,6 @@ diffs_ref <- function(db, rfs, rgs, geo_level, h){
 
 
 
-
-
-
-
-
-
-
-
 # decomposing CFR differences between populations over time
 ###########################################################
 
@@ -452,7 +490,7 @@ boot_pi <- function(model, odata, pdata, n, p) {
 # ymin <- 2014
 # db2 <- temp2
 
-fit_baseline <- function(db2) {
+fit_baseline <- function(db2, a) {
   
   skip_to_next <- F
   
@@ -469,34 +507,34 @@ fit_baseline <- function(db2) {
   valid_base <- db_bline %>% 
     filter(row_number() > floor(nrow(db_bline)/2))
   
-  no_sea1 = gnm(Deaths ~ ns(t, 3) + offset(log(Exposure)), 
+  no_sea1 = gnm(Deaths ~ ns(t, 4) + offset(log(Exposure)), 
                 data = train_base, 
                 family = poisson(link="log"))
   
-  no_sea2 = gnm(Deaths ~ ns(t, 3) + offset(log(Exposure)), 
+  no_sea2 = gnm(Deaths ~ ns(t, 4) + offset(log(Exposure)), 
                 data = valid_base, 
                 contrain = "*", 
                 contrainTo = coef(reg1),
                 family = poisson(link="log"))
   
-  sea1 = gnm(Deaths ~ ns(t, 3) + sn52 + cs52 + offset(log(Exposure)), 
+  sea1 = gnm(Deaths ~ ns(t, 4) + sn52 + cs52 + offset(log(Exposure)), 
              data = train_base, 
              family = poisson(link="log"))
   
-  sea2 = gnm(Deaths ~ ns(t, 3) + sn52 + cs52 + offset(log(Exposure)), 
+  sea2 = gnm(Deaths ~ ns(t, 4) + sn52 + cs52 + offset(log(Exposure)), 
              data = valid_base, 
              contrain = "*", 
              contrainTo = coef(reg1),
              family=poisson(link="log"))
   
-  if (no_sea2$aic - sea2$aic > 6) {
+  if (no_sea2$aic - sea2$aic > 6 | a >= 55) {
     # evaluating for overdispersion adjustment for seasonal model
     # Poisson model
-    base_po <- glm(Deaths ~ splines::ns(t, 3) + sn52 + cs52 + offset(log(Exposure)), 
+    base_po <- glm(Deaths ~ splines::ns(t, 4) + sn52 + cs52 + offset(log(Exposure)), 
                    family = poisson, data = db_bline)
     
     # negative binomial to account for overdispersion
-    base_nb <- try(MASS::glm.nb(Deaths ~ splines::ns(t, 3) + sn52 + cs52 + offset(log(Exposure)), 
+    base_nb <- try(MASS::glm.nb(Deaths ~ splines::ns(t, 4) + sn52 + cs52 + offset(log(Exposure)), 
                                 data = db_bline), silent = T)
     ov_sign <- try(base_nb$theta / base_nb$SE.theta > 1.96, silent = T)
     if (class(base_nb)[1] == "try-error" | is.na(ov_sign)) {
@@ -506,20 +544,20 @@ fit_baseline <- function(db2) {
     }
     # compare AIC between Poisson and Negative binomial and fit the best model
     if ((base_po$aic - base_nb$aic >= 6) & (ov_sign) & (base_nb$converged) & class(base_nb)[1] != "try-error") {
-      base <- MASS::glm.nb(Deaths ~ splines::ns(t, 3) + sn52 + cs52 + offset(log(Exposure)), 
+      base <- MASS::glm.nb(Deaths ~ splines::ns(t, 4) + sn52 + cs52 + offset(log(Exposure)), 
                            data = db_bline)
     } else {
-      base <- glm(Deaths ~ splines::ns(t, 3) + sn52 + cs52 + offset(log(Exposure)), 
+      base <- glm(Deaths ~ splines::ns(t, 4) + sn52 + cs52 + offset(log(Exposure)), 
                   family = poisson, data = db_bline)
     }
   } else {
     # evaluating for overdispersion adjustment for non-seasonal model
     # Poisson model
-    base_po <- glm(Deaths ~ splines::ns(t, 3) + offset(log(Exposure)), 
+    base_po <- glm(Deaths ~ splines::ns(t, 4) + offset(log(Exposure)), 
                    family = poisson, data = db_bline)
     
     # Negative binomial to account for overdispersion
-    base_nb <- try(MASS::glm.nb(Deaths ~ splines::ns(t, 3) + offset(log(Exposure)), 
+    base_nb <- try(MASS::glm.nb(Deaths ~ splines::ns(t, 4) + offset(log(Exposure)), 
                                 data = db_bline), silent = T)
     ov_sign <- try(base_nb$theta / base_nb$SE.theta > 1.96, silent = T)
     if (class(base_nb)[1] == "try-error" | is.na(ov_sign)) {
@@ -529,10 +567,10 @@ fit_baseline <- function(db2) {
     }
     # compare AIC between Poisson and Negative binomial and fit the best model
     if ((base_po$aic - base_nb$aic >= 6) & (ov_sign) & (base_nb$converged) & class(base_nb)[3] != "try-error") {
-      base <- MASS::glm.nb(Deaths ~ splines::ns(t, 3) + offset(log(Exposure)), 
+      base <- MASS::glm.nb(Deaths ~ splines::ns(t, 4) + offset(log(Exposure)), 
                            data = db_bline)
     } else {
-      base <- glm(Deaths ~ splines::ns(t, 3) + offset(log(Exposure)), 
+      base <- glm(Deaths ~ splines::ns(t, 4) + offset(log(Exposure)), 
                   family = poisson, data = db_bline)
     }
   }

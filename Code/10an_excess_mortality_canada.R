@@ -25,8 +25,8 @@ levels_provs <- c("British Columbia", "Alberta", "Ontario", "Quebec", "Quebec_is
 
 db_exc <- db_baseline %>% 
   filter(Year == 2020,
-         Week >= first_week & Week <= last_week,
-         !(Region == "Ontario" & Week >= last_week_ont)) %>% 
+         Week >= first_week & Week <= last_week) %>% 
+  drop_na(Deaths) %>% 
   select(Region, Sex, Age, Date, Week, Deaths, Exposure, Baseline, lp, up) %>% 
   mutate(Region = factor(Region, levels = levels_provs),
          Exposure = Exposure / 52,

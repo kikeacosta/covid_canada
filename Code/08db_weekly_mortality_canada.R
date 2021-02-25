@@ -12,7 +12,7 @@ source("Code/00_functions.R")
 
 # loading mortality data from StatCan files
 # https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=1310076801
-deaths <- read_csv("Data/201113_13100768-eng.zip",
+deaths <- read_csv("Data/210218_13100768-eng.zip",
                    col_types = cols(.default = "c"))
 
 # loading mortality from ISQ
@@ -52,8 +52,8 @@ unique(deaths2$Age)
 unique(deaths2$Region)
 table(deaths2$Region)
 
-r <- "Quebec"
-a <- "85"
+r <- "Manitoba"
+a <- "65"
 
 deaths2 %>% 
   filter(Region == r,
@@ -110,7 +110,6 @@ deaths_all <- bind_rows(deaths3, qc2)
 
 unique(deaths_all$Region)
 
-
 # adjusting population data
 ###########################
 age_excls <- c("18 years and over", 
@@ -142,12 +141,12 @@ pop2 <- pop %>%
 # population weekly interpolation 
 ages <- unique(pop2$Age)
 rgs <- unique(pop2$Region)
-rgs <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec")
+rgs <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec", "Manitoba")
 # r <- "Canada"
 # s <- "f"
 # a <- "50"
-inters_pop <- NULL
 # rgs <- "Canada"
+inters_pop <- NULL
 for(r in rgs){
   for(s in c("m", "f", "b")){
     for(a in ages){
@@ -176,7 +175,7 @@ table(inters_pop$Region)
 # Visual test
 #############
 
-r <- "Quebec"
+r <- "Manitoba"
 a <- "50"
 s <- "f"
 
@@ -238,8 +237,6 @@ pop4 <- inters_pop %>%
 table(pop4$Age)
 
 pop_all <- bind_rows(pop3, pop4)
-
-# 
 
 db_canada <- deaths_all %>% 
   left_join(pop_all) %>% 

@@ -33,6 +33,15 @@ db_cov2 <- db_cov %>%
   filter(!(Region %in% c("Montreal", "Toronto")))
 
 unique(db_cov2$Region)
+db_cov2 %>% 
+  filter(Age < 45) %>% 
+  group_by(Region, Sex) %>% 
+  summarise(Deaths = round(sum(Deaths)))
+
+
+db_exc %>% 
+  group_by(Region, Sex, Age) %>% 
+  summarise(Deaths = round(sum(Excess_epi)))
 
 db_cov_all <- db_cov2 %>% 
   group_by(Region, Sex) %>% 

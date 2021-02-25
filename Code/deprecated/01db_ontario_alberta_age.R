@@ -13,6 +13,7 @@ gs4_auth(email = email)
 on_ss <- "https://docs.google.com/spreadsheets/d/1jy0I5FYEQ28xILTkqE5NomLINQV7ERSsxm7guaoZ81A/edit#gid=1086950234"
 # Alberta Jul 15
 ab_ss <- "https://docs.google.com/spreadsheets/d/1Q4YLL0l1RZ52gBR4M2LSXYOnXa38WLtKRvbLKS3rlC0/edit#gid=573062633"
+# 
 
 # Ontario
 #########

@@ -24,6 +24,7 @@ pkgs <- c("tidyverse",
           "scales",
           "zoo",
           "googlesheets4",
+          "googledrive",
           "osfr")
 
 
@@ -73,6 +74,28 @@ spline_this <- function(xs, ys, l){
 }
 
 
+# Adjustments for unknown values
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+imput_age <- function(db){
+  db_unk_age <- db %>% 
+    filter(Age == "UNK" | Age == "unk") %>% 
+    rename(unk = Value) %>% 
+    select(-Age)
+  db_de_age_all <- db %>% 
+    filter(Age != "UNK" & Age != "unk") %>% 
+    group_by(Region, Date, Measure) %>% 
+    mutate(dist = Value / sum(Value)) %>% 
+    ungroup() %>% 
+    left_join(db_unk_age) %>% 
+    replace_na(list(unk = 0)) %>% 
+    mutate(Value = Value + dist * unk) %>% 
+    select(-dist, -unk)
+  return(db_de_age_all)
+}
+
+
+
+
 # distribution unknown ages and sex values
 distribute_unknwons <- function(db){
   
@@ -112,14 +135,11 @@ distribute_unknwons <- function(db){
 
 # harmonizing age groups
 ########################
-
 harmonize_age <- function(db, lambda = 100){
   
   Age <- db$Age %>% as.integer()
   Value <- db$Value
   nlast <- 105 - max(Age)
-  
-  library(ungroup)
   V1 <- pclm(x = Age, 
              y = Value, 
              nlast = nlast, 

@@ -3,8 +3,8 @@ source("Code/00_functions.R")
 
 # Countries, provinces and cities to compare
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-countries <- c("DE", "CH", "DK", "ES", "ES_M", "SE", "CA", "IT", "NL", "US")
-provinces <- c("CA_ON", "CA_BC", "CA", "CA_AB", "CA_QC", "CA_MB", "CA_SK")
+countries <- c("CA", "DE", "CH", "DK", "ES", "SE", "IT", "NL", "US")
+provinces <- c("CA_ON", "CA_BC", "CA_AB", "CA_QC", "CA_MB", "CA_SK")
 cities <- c("ES_M", "US_NYC", "DE_BE", "CA_MTL", "CA_CAL", "CA_EDM", "CA_TNT")
 
 # loading COVID data outside COVerAGE-DB 
@@ -148,7 +148,7 @@ db_prv_1st <- db_prv2 %>%
               filter(Code == "CA_BC", 
                      Sex == "b", 
                      Date == "2020-07-16")) %>% 
-  mutate(Wave = "1st",
+  mutate(Wave = 1,
          Type = "Province") %>% 
   filter(Code %in% provinces)
 
@@ -161,7 +161,7 @@ db_prv_1st <- db_prv2 %>%
 db_prv_2nd <- db_prv2 %>% 
   group_by(Region) %>% 
   filter(Date == max(Date)) %>% 
-  mutate(Wave = "2nd",
+  mutate(Wave = 2,
          Type = "Province") %>% 
   filter(Code %in% provinces)
 
@@ -196,7 +196,7 @@ ctrs_1st <- db_cov3 %>%
            (Code == "IT" & Date == "2020-07-14") | 
            (Code == "NL" & Date == "2020-07-12") | 
            (Code == "US" & Date == "2020-06-27")) %>% 
-  mutate(Wave = "1st",
+  mutate(Wave = 1,
          Type = "Country")
 
 ctrs_2nd <- db_cov3 %>% 
@@ -204,13 +204,13 @@ ctrs_2nd <- db_cov3 %>%
   group_by(Code) %>% 
   filter(Date == max(Date)) %>% 
   ungroup() %>% 
-  mutate(Wave = "2nd",
+  mutate(Wave = 2,
          Type = "Country")
 
 # Cities
 ctys_1st <- db_cov3 %>% 
   filter(Code %in% cities & Date == "2020-07-15") %>% 
-  mutate(Wave = "1st",
+  mutate(Wave = 1,
          Type = "City")
 
 ctys_2nd <- db_cov3 %>% 
@@ -218,7 +218,7 @@ ctys_2nd <- db_cov3 %>%
   group_by(Code) %>% 
   filter(Date == max(Date)) %>% 
   ungroup() %>% 
-  mutate(Wave = "2nd",
+  mutate(Wave = 2,
          Type = "City")
 
 unique(ctys_1st$Code)

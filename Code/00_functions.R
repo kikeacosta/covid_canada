@@ -93,9 +93,6 @@ imput_age <- function(db){
   return(db_de_age_all)
 }
 
-
-
-
 # distribution unknown ages and sex values
 distribute_unknwons <- function(db){
   
@@ -150,85 +147,13 @@ harmonize_age <- function(db, lambda = 100){
   return(out)
 }
 
-# db_harm2 <- tibble()
-# 
-# for(pp in c("Ontario", "Toronto", "Alberta")){
-#   for(ms in c("Cases", "Deaths")){
-#     for(sx in c("f", "m")){
-#       chunk <- db_canada2 %>% 
-#         filter(Region == pp,
-#                Measure == ms,
-#                Sex == sx)
-#       
-#       db_harm <- harmonize_age(chunk) %>% 
-#         mutate(Region = pp,
-#                Measure = ms,
-#                Sex = sx)
-#       
-#       db_harm2 <- bind_rows(db_harm2, db_harm)
-#       
-#     }
-#   }
-# }
 
 # Kitagawa decomposition
 ########################
-kita <- function(db, p1, p2, d){
-  
-  vals1 <- db %>% 
-    filter(Date %in% d,
-           Region %in% c(p1, p2)) %>% 
-    group_by(Region) %>% 
-    summarise(CFR_t = max(CFR_t)) %>% 
-    ungroup()
-  
-  vals2 <- bind_cols(vals1[1,2] %>% 
-                       rename(CFR1 = CFR_t),
-                     vals1[2,2] %>% 
-                       rename(CFR2 = CFR_t))
-  
-  cfr1 <- db %>% 
-    filter(Date %in% d,
-           Region %in% p1) %>% 
-    select(Age, age_dist, CFR) %>% 
-    rename(C1 = age_dist, 
-           CFR1 = CFR)
-  
-  cfr2 <- db %>% 
-    filter(Date %in% d,
-           Region %in% p2) %>% 
-    select(Age, age_dist, CFR) %>% 
-    rename(C2 = age_dist, 
-           CFR2 = CFR)
-  
-  cfrs <- left_join(cfr1, cfr2) %>% 
-    mutate(d_C = C2 - C1,
-           d_CFR = CFR2 - CFR1,
-           a_C = (C2 + C1) * 0.5,
-           a_CFR = (CFR2 + CFR1) * 0.5)
-  
-  # decomposed into age and fatality component
-  cfrs_dec <- cfrs %>% 
-    group_by() %>% 
-    summarise(alpha = sum(d_C * a_CFR),
-              beta = sum(a_C * d_CFR)) %>%
-    ungroup() %>% 
-    mutate(diff = alpha + beta) %>% 
-    select(diff, alpha, beta)
-  
-  result <- bind_cols(vals2, cfrs_dec) %>% 
-    select(CFR1, CFR2, diff, alpha, beta)
-  
-  return(result)
-}
-
-# Kitagawa decomposition v2
-###########################
-
-kitagawa <- function(db, p1, p2, s){
+db <- db2
+kitagawa <- function(db, p1, p2){
   two <- db %>% 
-    filter(Region %in% c(p1, p2),
-           Sex == s)
+    filter(Region %in% c(p1, p2))
   
   vals1 <- two %>% 
     select(Region, CFR_t) %>% 
@@ -240,15 +165,13 @@ kitagawa <- function(db, p1, p2, s){
                   CFR2 = vals1 %>% filter(Region == p2) %>% pull(CFR_t))
     
   cfr1 <- db %>% 
-    filter(Region == p1,
-           Sex == s) %>% 
+    filter(Region == p1) %>% 
     select(Age, age_dist, CFR) %>% 
     rename(C1 = age_dist, 
            CFR1 = CFR)
   
   cfr2 <- db %>% 
-    filter(Region == p2,
-           Sex == s) %>% 
+    filter(Region == p2) %>% 
     select(Age, age_dist, CFR) %>% 
     rename(C2 = age_dist, 
            CFR2 = CFR)
@@ -275,68 +198,35 @@ kitagawa <- function(db, p1, p2, s){
 }
 
 
-# kitagawa function generalizable
-##################################
-
-apply_kitagawa <- function(db_d1, db_d2){
-  vals <- tibble(CFR1 = db_d1 %>% 
-                   pull(CFR_t) %>% 
-                   unique(),
-                 CFR2 = db_d2 %>% 
-                   pull(CFR_t) %>% 
-                   unique())
-  
-  cfr1 <- db_d1 %>% 
-    select(Age, age_dist, CFR) %>% 
-    rename(C1 = age_dist, 
-           CFR1 = CFR)
-  
-  cfr2 <- db_d2 %>% 
-    select(Age, age_dist, CFR) %>% 
-    rename(C2 = age_dist, 
-           CFR2 = CFR)
-  
-  cfrs <- left_join(cfr1, cfr2) %>% 
-    mutate(d_C = C2 - C1,
-           d_CFR = CFR2 - CFR1,
-           a_C = (C2 + C1) * 0.5,
-           a_CFR = (CFR2 + CFR1) * 0.5)
-  
-  # decomposed into age and fatality component
-  cfrs_dec <- cfrs %>% 
-    group_by() %>% 
-    summarise(alpha = sum(d_C * a_CFR),
-              beta = sum(a_C * d_CFR)) %>%
-    ungroup() %>% 
-    mutate(diff = alpha + beta) %>% 
-    select(diff, alpha, beta)
-  
-  result <- bind_cols(vals, cfrs_dec) %>% 
-    select(CFR1, CFR2, diff, alpha, beta)
-  
-  return(result)
-}
-
-
-diffs_ref <- function(db, rfs, rgs, geo_level, h){
+# db <- db_cfr
+# rfs <- rfs
+# geo_level <- "Country"
+# w <- 1
+# h <- 2.5
+# p2 <- "Germany"
+# p1 <- "Canada"
+diffs_ref <- function(db, rfs, geo_level, w, h){
   db_diffs_all <- NULL
   for(p1 in rfs){
-    db_diffs_can <- NULL
+    db_diffs_ref <- NULL
+    db2 <- db %>% 
+      filter(Type == geo_level,
+             Wave == w)
+    rgs <- unique(db2$Region)
     for(p2 in rgs){
-      db_diffs_can <- db_diffs_can %>% 
-        bind_rows(bind_cols(tibble(P1 = p1, P2 = p2), kitagawa(db, p1, p2, s)))
+      db_diffs_ref <- db_diffs_ref %>% 
+        bind_rows(bind_cols(tibble(P1 = p1, P2 = p2), kitagawa(db2, p1, p2)))
     }
     
-    db_diffs_can2 <- db_diffs_can %>% 
+    db_diffs_ref2 <- db_diffs_ref %>% 
       gather(alpha, beta, key = "Components", value = Value) %>% 
       mutate(P2cfr = paste0(P2, " (", round(CFR2, 3), ")"),
              P1cfr = paste0(P1, " (", round(CFR1, 3), ") as reference"))
     
     db_diffs_all <- db_diffs_all %>% 
-      bind_rows(db_diffs_can2) %>% 
+      bind_rows(db_diffs_ref2) %>% 
       filter(P2 != P1) %>% 
       mutate(t = "Total CFR difference")
-    
   }
   
   db_diffs_all %>% 
@@ -367,76 +257,10 @@ diffs_ref <- function(db, rfs, rgs, geo_level, h){
       axis.title.x = element_text(size = tx + 1),
       axis.title.y = element_text(size = tx + 1)
     )
-  ggsave(paste0("Figures/cfr_diff_reference_", geo_level, ".png"), width = 5, height = h)
+  ggsave(paste0("Figures/cfr_diff_reference_", geo_level, "_", w, ".png"), width = 5, height = h)
   return(db_diffs_all)
 }
 
-
-
-
-
-
-
-
-
-# decomposing CFR differences between populations over time
-###########################################################
-
-decomp <- function(p1, p2, d_exc){
-  
-  # p1 <- "Quebec"
-  # p2 <- "Montreal"
-  # d_exc <- c(ymd("2020-04-28"), ymd("2020-04-29"))
-  # 
-  # 
-  
-  dates2 <- db_can_age2 %>% 
-    filter(Region %in% c(p1, p2),
-           !(Date %in% d_exc)) %>% 
-    select(Region, Date) %>% 
-    unique() %>% 
-    mutate(n = 1) %>% 
-    spread(Region, n) %>% 
-    rename(pop1 = 2,
-           pop2 = 3) %>% 
-    mutate(av = pop1 + pop2) %>% 
-    filter(!is.na(av)) %>% 
-    pull(Date)
-  
-  ymd(dates2[12])
-  
-  db_res <- NULL
-  
-  for(d in dates2){
-    res_t <- kita(db_can_age2, p1, p2, d)
-    db_res <- db_res %>% 
-      bind_rows(res_t)
-  }
-  
-  bd_res2 <- tibble(Date = dates2, R1 = p1, R2 = p2) %>% 
-    bind_cols(db_res)
-  
-  bd_res3 <- bd_res2 %>% 
-    select(Date, alpha, beta) %>% 
-    gather(-Date, key = "Component", value = "Value")
-  
-  diffs <- bd_res2 %>% 
-    select(Date, diff)
-  
-  bd_res4 <- bd_res3 %>% 
-    left_join(diffs)
-  
-  bd_res4 %>% 
-    ggplot()+
-    geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
-    geom_bar(aes(Date, Value, col = Component), stat = "identity", fill = "transparent")+
-    geom_point(aes(Date, diff), col = "black")+
-    scale_color_manual(values = c("blue", "red"))+
-    labs(title = paste0("Decomposition of CFR difference between ", p1, " and ", p2, " over time"))+
-    theme_bw()
-  
-  ggsave(paste0("Figures/cfr_diff_decomp_over_time_", p1, "_", p2, ".png"))
-}
 
 # ungrouping remaining life expectancy
 ungr_life_ex <- function(db, ax){
@@ -608,3 +432,181 @@ fit_baseline <- function(db2, a) {
   
   return(db3)
 }
+
+
+# Previous Kitagawa functions
+
+# decomposing CFR differences between populations over time
+###########################################################
+
+# decomp <- function(p1, p2, d_exc){
+#   
+#   # p1 <- "Quebec"
+#   # p2 <- "Montreal"
+#   # d_exc <- c(ymd("2020-04-28"), ymd("2020-04-29"))
+#   # 
+#   # 
+#   
+#   dates2 <- db_can_age2 %>% 
+#     filter(Region %in% c(p1, p2),
+#            !(Date %in% d_exc)) %>% 
+#     select(Region, Date) %>% 
+#     unique() %>% 
+#     mutate(n = 1) %>% 
+#     spread(Region, n) %>% 
+#     rename(pop1 = 2,
+#            pop2 = 3) %>% 
+#     mutate(av = pop1 + pop2) %>% 
+#     filter(!is.na(av)) %>% 
+#     pull(Date)
+#   
+#   ymd(dates2[12])
+#   
+#   db_res <- NULL
+#   
+#   for(d in dates2){
+#     res_t <- kita(db_can_age2, p1, p2, d)
+#     db_res <- db_res %>% 
+#       bind_rows(res_t)
+#   }
+#   
+#   bd_res2 <- tibble(Date = dates2, R1 = p1, R2 = p2) %>% 
+#     bind_cols(db_res)
+#   
+#   bd_res3 <- bd_res2 %>% 
+#     select(Date, alpha, beta) %>% 
+#     gather(-Date, key = "Component", value = "Value")
+#   
+#   diffs <- bd_res2 %>% 
+#     select(Date, diff)
+#   
+#   bd_res4 <- bd_res3 %>% 
+#     left_join(diffs)
+#   
+#   bd_res4 %>% 
+#     ggplot()+
+#     geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
+#     geom_bar(aes(Date, Value, col = Component), stat = "identity", fill = "transparent")+
+#     geom_point(aes(Date, diff), col = "black")+
+#     scale_color_manual(values = c("blue", "red"))+
+#     labs(title = paste0("Decomposition of CFR difference between ", p1, " and ", p2, " over time"))+
+#     theme_bw()
+#   
+#   ggsave(paste0("Figures/cfr_diff_decomp_over_time_", p1, "_", p2, ".png"))
+# }
+
+# kitagawa function generalizable
+##################################
+
+# apply_kitagawa <- function(db_d1, db_d2){
+#   vals <- tibble(CFR1 = db_d1 %>% 
+#                    pull(CFR_t) %>% 
+#                    unique(),
+#                  CFR2 = db_d2 %>% 
+#                    pull(CFR_t) %>% 
+#                    unique())
+#   
+#   cfr1 <- db_d1 %>% 
+#     select(Age, age_dist, CFR) %>% 
+#     rename(C1 = age_dist, 
+#            CFR1 = CFR)
+#   
+#   cfr2 <- db_d2 %>% 
+#     select(Age, age_dist, CFR) %>% 
+#     rename(C2 = age_dist, 
+#            CFR2 = CFR)
+#   
+#   cfrs <- left_join(cfr1, cfr2) %>% 
+#     mutate(d_C = C2 - C1,
+#            d_CFR = CFR2 - CFR1,
+#            a_C = (C2 + C1) * 0.5,
+#            a_CFR = (CFR2 + CFR1) * 0.5)
+#   
+#   # decomposed into age and fatality component
+#   cfrs_dec <- cfrs %>% 
+#     group_by() %>% 
+#     summarise(alpha = sum(d_C * a_CFR),
+#               beta = sum(a_C * d_CFR)) %>%
+#     ungroup() %>% 
+#     mutate(diff = alpha + beta) %>% 
+#     select(diff, alpha, beta)
+#   
+#   result <- bind_cols(vals, cfrs_dec) %>% 
+#     select(CFR1, CFR2, diff, alpha, beta)
+#   
+#   return(result)
+# }
+
+# db_harm2 <- tibble()
+# 
+# for(pp in c("Ontario", "Toronto", "Alberta")){
+#   for(ms in c("Cases", "Deaths")){
+#     for(sx in c("f", "m")){
+#       chunk <- db_canada2 %>% 
+#         filter(Region == pp,
+#                Measure == ms,
+#                Sex == sx)
+#       
+#       db_harm <- harmonize_age(chunk) %>% 
+#         mutate(Region = pp,
+#                Measure = ms,
+#                Sex = sx)
+#       
+#       db_harm2 <- bind_rows(db_harm2, db_harm)
+#       
+#     }
+#   }
+# }
+
+# Kitagawa decomposition
+########################
+# kita <- function(db, p1, p2, d){
+#   
+#   vals1 <- db %>% 
+#     filter(Date %in% d,
+#            Region %in% c(p1, p2)) %>% 
+#     group_by(Region) %>% 
+#     summarise(CFR_t = max(CFR_t)) %>% 
+#     ungroup()
+#   
+#   vals2 <- bind_cols(vals1[1,2] %>% 
+#                        rename(CFR1 = CFR_t),
+#                      vals1[2,2] %>% 
+#                        rename(CFR2 = CFR_t))
+#   
+#   cfr1 <- db %>% 
+#     filter(Date %in% d,
+#            Region %in% p1) %>% 
+#     select(Age, age_dist, CFR) %>% 
+#     rename(C1 = age_dist, 
+#            CFR1 = CFR)
+#   
+#   cfr2 <- db %>% 
+#     filter(Date %in% d,
+#            Region %in% p2) %>% 
+#     select(Age, age_dist, CFR) %>% 
+#     rename(C2 = age_dist, 
+#            CFR2 = CFR)
+#   
+#   cfrs <- left_join(cfr1, cfr2) %>% 
+#     mutate(d_C = C2 - C1,
+#            d_CFR = CFR2 - CFR1,
+#            a_C = (C2 + C1) * 0.5,
+#            a_CFR = (CFR2 + CFR1) * 0.5)
+#   
+#   # decomposed into age and fatality component
+#   cfrs_dec <- cfrs %>% 
+#     group_by() %>% 
+#     summarise(alpha = sum(d_C * a_CFR),
+#               beta = sum(a_C * d_CFR)) %>%
+#     ungroup() %>% 
+#     mutate(diff = alpha + beta) %>% 
+#     select(diff, alpha, beta)
+#   
+#   result <- bind_cols(vals2, cfrs_dec) %>% 
+#     select(CFR1, CFR2, diff, alpha, beta)
+#   
+#   return(result)
+# }
+
+

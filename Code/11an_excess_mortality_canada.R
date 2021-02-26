@@ -1,12 +1,4 @@
-rm(list=ls())
-Sys.setenv(LANG = "en")
-Sys.setlocale("LC_ALL","English")
-
-library(tidyverse)
-library(lubridate)
-library(readxl)
-# source("Code/00_functions.R")
-
+source("Code/00_functions.R")
 ym <- 2010
 exc_type <- "long_flu" 
 

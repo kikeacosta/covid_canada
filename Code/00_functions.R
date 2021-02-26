@@ -150,7 +150,7 @@ harmonize_age <- function(db, lambda = 100){
 
 # Kitagawa decomposition
 ########################
-db <- db2
+# db <- db2
 kitagawa <- function(db, p1, p2){
   two <- db %>% 
     filter(Region %in% c(p1, p2))
@@ -164,13 +164,13 @@ kitagawa <- function(db, p1, p2){
   vals2 <- tibble(CFR1 = vals1 %>% filter(Region == p1) %>% pull(CFR_t),
                   CFR2 = vals1 %>% filter(Region == p2) %>% pull(CFR_t))
     
-  cfr1 <- db %>% 
+  cfr1 <- two %>% 
     filter(Region == p1) %>% 
     select(Age, age_dist, CFR) %>% 
     rename(C1 = age_dist, 
            CFR1 = CFR)
   
-  cfr2 <- db %>% 
+  cfr2 <- two %>% 
     filter(Region == p2) %>% 
     select(Age, age_dist, CFR) %>% 
     rename(C2 = age_dist, 
@@ -205,7 +205,7 @@ kitagawa <- function(db, p1, p2){
 # h <- 2.5
 # p2 <- "Germany"
 # p1 <- "Canada"
-diffs_ref <- function(db, rfs, geo_level, w, h){
+diffs_ref <- function(db, rfs, geo_level, w, l, h, f){
   db_diffs_all <- NULL
   for(p1 in rfs){
     db_diffs_ref <- NULL
@@ -235,7 +235,7 @@ diffs_ref <- function(db, rfs, geo_level, w, h){
     geom_bar(aes(reorder(P2cfr, -diff), Value, fill = Components, col = Components), stat = "identity", alpha = 0.5)+
     geom_point(aes(reorder(P2cfr, -diff), diff, shape = t), col = "black", size = 2)+
     facet_wrap(~ P1cfr, ncol = 1, scales = "free_y")+
-    scale_y_continuous(limits = c(-0.1, 0.1))+
+    scale_y_continuous(limits = c(-l, l))+
     geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 0.5)+
     scale_color_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
     scale_fill_manual(values = c("#43a2ca", "#e34a33"), labels = c("Age structure", "Fatality"))+
@@ -257,7 +257,7 @@ diffs_ref <- function(db, rfs, geo_level, w, h){
       axis.title.x = element_text(size = tx + 1),
       axis.title.y = element_text(size = tx + 1)
     )
-  ggsave(paste0("Figures/cfr_diff_reference_", geo_level, "_", w, ".png"), width = 5, height = h)
+  ggsave(paste0("Figures/", f, "_cfr_diff_reference_", geo_level, "_wave_", w, ".png"), width = 5, height = h)
   return(db_diffs_all)
 }
 

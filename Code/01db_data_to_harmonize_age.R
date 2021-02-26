@@ -6,24 +6,21 @@ drive_auth(email = email)
 gs4_auth(email = email)
 
 # Ontario and Toronto Jul 15 2020
-on_link <- "https://docs.google.com/spreadsheets/d/1jy0I5FYEQ28xILTkqE5NomLINQV7ERSsxm7guaoZ81A/edit#gid=1086950234"
+# on_link <- "https://docs.google.com/spreadsheets/d/1jy0I5FYEQ28xILTkqE5NomLINQV7ERSsxm7guaoZ81A/edit#gid=1086950234"
 # Alberta Jul 15 2020
-ab_link <- "https://docs.google.com/spreadsheets/d/1Q4YLL0l1RZ52gBR4M2LSXYOnXa38WLtKRvbLKS3rlC0/edit#gid=573062633"
+# ab_link <- "https://docs.google.com/spreadsheets/d/1Q4YLL0l1RZ52gBR4M2LSXYOnXa38WLtKRvbLKS3rlC0/edit#gid=573062633"
 # Germany and Berlin Jul 15 2020
-de_link <- "https://docs.google.com/spreadsheets/d/1ojjUdXSYLG6wwY5aGS48QBKc_56z8gbgoewYILC1owE/edit#gid=1067163235"
+# de_link <- "https://docs.google.com/spreadsheets/d/1ojjUdXSYLG6wwY5aGS48QBKc_56z8gbgoewYILC1owE/edit#gid=1067163235"
 # data All Ontario Feb 24 2021
-db_tnt <- read_csv("Data/backup/conposcovidloc.csv")
+db_tnt <- read_csv("Data/backup/ontario_data_20210224.csv")
 # data for Alberta in February 23 2021
-db_alb_feb <- read_csv("Data/backup/alberta_feb23_2021.csv")
+db_alb_feb <- read_csv("Data/backup/alberta_data_20210223.csv")
 
 # ~~~~~~~~
 # Ontario
 # ~~~~~~~~
 
-# reading Ontario data from Drive
-db_on <- read_sheet(on_link, 
-                    sheet = "Data_15.07.2020.csv", 
-                    na = "NA")
+db_on <- read_csv("Data/backup/ontario_data_20200715.csv")
 
 db_on2 <- db_on %>% 
   rename(Age = 6,
@@ -127,13 +124,46 @@ db_tnt_feb <- bind_rows(db_to_deaths_feb, db_to_cases_feb) %>%
   ungroup() %>% 
   mutate(Date = ymd("2021-02-24"))
 
+
+# Ottawa
+unique(db_tnt2$place)
+
+db_ot_deaths_feb <- db_tnt2 %>% 
+  filter(place == "Ottawa",
+         outcome == "Fatal") %>% 
+  group_by(Sex, Age) %>% 
+  summarise(Value = sum(n())) %>% 
+  ungroup() %>% 
+  complete(Sex, Age, fill = list(Value = 0)) %>% 
+  mutate(Measure = "Deaths")
+
+db_ot_cases_feb <- db_tnt2 %>% 
+  filter(place == "Ottawa") %>% 
+  group_by(Sex, Age) %>% 
+  summarise(Value = sum(n())) %>% 
+  ungroup() %>% 
+  complete(Sex, Age, fill = list(Value = 0)) %>% 
+  mutate(Measure = "Cases")
+
+db_ott_feb <- bind_rows(db_ot_deaths_feb, db_ot_cases_feb) %>% 
+  mutate(Region = "Ottawa") %>% 
+  group_by(Region, Measure, Age) %>% 
+  summarise(Value = sum(Value)) %>% 
+  ungroup() %>% 
+  mutate(Date = ymd("2021-02-24")) %>% 
+  complete(Region, Measure, Age, Date, fill = list(Value = 0))
+
+
+
 # ~~~~~~~~
 # Alberta
 # ~~~~~~~~
 # reading Alberta data from Drive
-db_ab <- read_sheet(ab_link, 
-                    sheet = "Data_15.07.2020.csv", 
-                    na = "NA")
+# db_ab <- read_sheet(ab_link, 
+#                     sheet = "Data_15.07.2020.csv", 
+#                     na = "NA")
+
+db_ab <- read_csv("Data/backup/alberta_data_20200715.csv")
 
 db_ab2 <- db_ab %>% 
   rename(Age = 5,
@@ -271,7 +301,8 @@ db_ont_alb <- bind_rows(db_to3, db_on3, db_ab3) %>%
   ungroup() %>% 
   mutate(Date = ymd("2020-07-15")) %>% 
   bind_rows(db_tnt_feb,
-            db_alb_feb3)
+            db_alb_feb3, 
+            db_ott_feb)
 
 write_rds(db_ont_alb, "Output/ontario_alberta20200715.rds")
 
@@ -282,6 +313,7 @@ db_ont_alb <-
 # Germany and Berlin
 # ~~~~~~~~~~~~~~~~~~
 # db_de <- read_sheet(de_link)
+# read_csv("Data/backup/germany_data_20200715.csv")
 # db_de2 <- db_de %>%
 #   mutate(Sex = case_when(Geschlecht == "M" ~ "m",
 #                          Geschlecht == "W" ~ "f",

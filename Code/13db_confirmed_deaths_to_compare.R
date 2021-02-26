@@ -35,6 +35,25 @@ qc_bc <- read_sheet("https://docs.google.com/spreadsheets/d/1X2GnK5yuQIO6sc2Wcwf
                     col_types = "c")
 can <- read_sheet("https://docs.google.com/spreadsheets/d/1oxs36Zp5Y1NJW2uAElQYsPczJBIvHKIgyo82SxQNzGM/edit#gid=0")
 
+qc <- read_csv("Data/quebec_deaths_age_historic.csv")
+
+qc2 <- qc %>% 
+  rename(Date = 1) %>% 
+  gather(-Date, key = Age, value = Deaths) %>% 
+  group_by(Age) %>% 
+  mutate(Deaths = cumsum(Deaths)) %>% 
+  ungroup() %>% 
+  mutate(Age = str_sub(Age, 1, 2),
+         Age = ifelse(Age == "0-", 0, as.integer(Age)),
+         Date = ymd(Date))
+
+qc_5dec <- qc2 %>% 
+  filter(Date == "2020-12-05")
+
+qc_2ene <- qc2 %>% 
+  filter(Date == "2021-01-02")
+
+
 ont2 <- ont %>% 
   select(Age_Group, CLIENT_GENDER, OUTCOME1) %>% 
   filter(OUTCOME1 == "Fatal") %>% 
@@ -232,3 +251,145 @@ write_rds(out, "Output/covid_data_by_age_sex_dates_excess.rds")
 #   ungroup
 # 
 # 
+
+
+qc_5dec <- qc2 %>% 
+  filter(Date == "2020-12-05") %>% 
+  rename(Value = Deaths)
+
+qc_2ene <- qc2 %>% 
+  filter(Date == "2021-01-02") %>% 
+  rename(Value = Deaths)
+
+
+qc_5dec_ung <- 
+  harmonize_age(qc_5dec) %>% 
+  mutate(Region = "Quebec",
+         Date = "2020-12-05")
+
+qc_2ene_ung <- 
+  harmonize_age(qc_2ene) %>% 
+  mutate(Region = "Quebec_isq",
+         Date = "2021-01-02")
+
+
+qc <- bind_rows(qc_2ene_ung, qc_5dec_ung)
+
+qc_2ene_ung %>% 
+  summarise(sum(Value))
+
+qc_2ene %>% 
+  summarise(sum(Value))
+
+age_int <- 5
+
+qc2 <- qc %>% 
+  mutate(Age = floor(Age / age_int) * age_int) %>%
+  group_by(Date, Region, Age) %>%
+  summarise(Value = sum(Value)) %>% 
+  ungroup() %>% 
+  mutate(Sex = "t",
+         Date = ymd(Date)) %>% 
+  rename(Deaths = Value)
+
+
+out <- read_rds("Output/covid_data_by_age_sex_dates_excess.rds") %>% 
+  filter(Region != "Quebec") %>% 
+  mutate(Sex = ifelse(Sex == "b", "t", Sex)) %>% 
+  bind_rows(qc2)
+
+
+
+
+
+
+
+
+
+db_d2020 <- read_csv("https://raw.githubusercontent.com/ccodwg/Covid19Canada/master/individual_level/mortality_2020.csv")
+db_d2021 <- read_csv("https://raw.githubusercontent.com/ccodwg/Covid19Canada/master/individual_level/mortality_2021.csv")
+
+manit_2020 <- db_d2020 %>% 
+  filter(province == "Manitoba") %>% 
+  select(age, sex, date_death_report)
+
+manit_2021 <- db_d2021 %>% 
+  filter(province == "Manitoba") %>% 
+  select(age, sex, date_death_report)
+
+unique(manit$Age)
+
+manit <- bind_rows(manit_2020, manit_2021) %>% 
+  rename(Date = 3,
+         Age = age,
+         Sex = sex) %>% 
+  mutate(Date = dmy(Date),
+         Age = str_sub(Age, 1, 3),
+         Age = str_replace(Age, "-", ""),
+         Age = case_when(Age == "<10" ~ "0", 
+                         Age == "100" ~ "90",
+                         TRUE ~ Age),
+         Sex = recode(Sex, 
+                      "Female" = "f",
+                      "Male" = "m")) %>% 
+  group_by(Date, Sex, Age) %>% 
+  summarise(New = n()) %>% 
+  ungroup() %>% 
+  complete(Date, Sex, Age, fill = list(New = 0)) %>% 
+  arrange(Date) %>% 
+  group_by(Sex, Age) %>% 
+  mutate(Deaths = cumsum(New)) %>% 
+  ungroup()
+
+recent_mani <- manit %>% 
+  filter(Date == max(Date))
+
+manit_31oct <- 
+  manit %>% 
+  filter(Date == "2020-10-31")
+
+manit_31oct %>% 
+  summarise(sum(Deaths))
+
+# Saskatchewan
+
+unique(db_d2020$province)
+sask_2020 <- db_d2020 %>% 
+  filter(province == "Saskatchewan") %>% 
+  select(age, sex, date_death_report)
+
+sask_2021 <- db_d2021 %>% 
+  filter(province == "Saskatchewan") %>% 
+  select(age, date_death_report)
+
+table(sask$Age)
+
+sask <- bind_rows(sask_2020, sask_2021) %>% 
+  rename(Date = 3,
+         Age = age) %>% 
+  mutate(Date = dmy(Date),
+         Age = str_sub(Age, 1, 2),
+         Age = case_when(Age == ">8" | Age == ">9" | Age == "90" ~ "80",
+                         Age == "64" ~ "60",
+                         Age == "No" ~ "UNK",
+                         TRUE ~ Age)) %>% 
+  group_by(Date, Age) %>% 
+  summarise(New = n()) %>% 
+  ungroup() %>% 
+  complete(Date, Age, fill = list(New = 0)) %>% 
+  arrange(Date) %>% 
+  group_by(Age) %>% 
+  mutate(Deaths = cumsum(New)) %>% 
+  ungroup()
+
+recent_sask <- sask %>% 
+  filter(Date == max(Date))
+
+sask_16nov <- 
+  sask %>% 
+  filter(Date == "2020-11-20")
+
+
+
+
+

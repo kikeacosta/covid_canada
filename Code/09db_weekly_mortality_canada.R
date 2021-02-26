@@ -141,7 +141,7 @@ pop2 <- pop %>%
 # population weekly interpolation 
 ages <- unique(pop2$Age)
 rgs <- unique(pop2$Region)
-rgs <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec", "Manitoba")
+rgs <- c("British Columbia", "Alberta", "Canada", "Ontario", "Quebec", "Manitoba", "Saskatchewan")
 # r <- "Canada"
 # s <- "f"
 # a <- "50"
@@ -175,7 +175,7 @@ table(inters_pop$Region)
 # Visual test
 #############
 
-r <- "Manitoba"
+r <- "Saskatchewan"
 a <- "50"
 s <- "f"
 

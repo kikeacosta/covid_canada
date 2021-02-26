@@ -59,7 +59,7 @@ for(r in rs){
 }
 
 ifrs_ca_adj %>%
-  filter(Region == "Alberta",
+  filter(Region == "Manitoba",
          Sex == "t") %>%
   ggplot()+
   geom_line(aes(Age, IFR, col = Estimate))+

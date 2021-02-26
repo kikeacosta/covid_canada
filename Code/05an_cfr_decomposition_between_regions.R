@@ -19,6 +19,7 @@ can_prov <- db %>%
   mutate(Type = "Province")
 
 db2 <- db %>% 
+  filter(Code != "CH") %>% 
   bind_rows(can_prov)
 
 
@@ -26,7 +27,7 @@ db2 <- db %>%
 ########################################
 
 db_cfr <- db2 %>% 
-  group_by(Region, Code, Date) %>% 
+  group_by(Region, Code, Date, Type) %>% 
   mutate(CFR = Deaths / Cases,
          age_dist = Cases / sum(Cases),
          Cases_t = sum(Cases),
@@ -34,105 +35,26 @@ db_cfr <- db2 %>%
          CFR_t = Deaths_t / Cases_t) %>% 
   ungroup()
 
-# ctrs_1 <- db_cfr %>% 
-#   filter(Type == "Country",
-#          Wave == 1)
-# 
-# ctrs_2 <- db_cfr %>% 
-#   filter(Type == "Country",
-#          Wave == 2)
-# 
-# provs_1 <- db_cfr %>% 
-#   filter(Type == "Province",
-#          Wave == 1)
-# 
-# provs_2 <- db_cfr %>% 
-#   filter(Type == "Province",
-#          Wave == 2)
-# 
-# ctys_1 <- db_cfr %>% 
-#   filter(Type == "City",
-#          Wave == 1)
-# 
-# ctys_2 <- db_cfr %>% 
-#   filter(Type == "City",
-#          Wave == 2)
-
-# table(ctrs_1$Region, ctrs_1$Sex)
-# 
 tx <- 8
-s <- "b"
-# 
-# # Across countries
-# ##################
-# unique(ctrs_1$Region)
-# rgs <- c("Spain",
-#          "Denmark",
-#          "Germany",
-#          "Italy",
-#          "Netherlands",
-#          "Sweden",
-#          "USA")
-# 
 rfs <- c("Canada")
-cfr_cts <- diffs_ref(db_cfr, rfs, "Country", 1, 2.5)
+cfr_cts_w1 <- diffs_ref(db_cfr, rfs, "Country", 1, 0.06, 2.5, 2)
+cfr_cts_w2 <- diffs_ref(db_cfr, rfs, "Country", 2, 0.02, 2.5, 2)
 
 # Provinces and Canada
-######################
-
-rgs <- c("Alberta",
-         "British Columbia",
-         "Ontario",
-         "Quebec")
+# ~~~~~~~~~~~~~~~~~~~~
 
 rfs <- c("Canada")
+cfr_provs_w1 <- diffs_ref(db_cfr, rfs, "Province", 1, 0.07, 2, 4)
+cfr_provs_w2 <- diffs_ref(db_cfr, rfs, "Province", 2, 0.015, 2.5, 4)
 
-cfr_provs <- diffs_ref(db_can_oth, rfs, rgs, "Province", 2)
+# Cities
+# ~~~~~~~~~~~~~~~~~~~~
+rfs <- c("Toronto")
+cfr_city_w1 <- diffs_ref(db_cfr, rfs, "City", 1, 0.1, 2, 5)
+cfr_city_w2 <- diffs_ref(db_cfr, rfs, "City", 2, 0.025, 2.5, 5)
 
-# rgs <- c("Canada",
-#          "Alberta",
-#          "British Columbia",
-#          "Ontario",
-#          "Quebec")
-# 
-# rfs <- c("Alberta",
-#          "British Columbia",
-#          "Ontario",
-#          "Quebec")
-# 
-# cfr_provs2 <- diffs_ref(db_can_oth, rfs, rgs, "Provinces", 5)
 
-# 
-# # Across cities
-# ###############
-# 
-# rgs <- c("Montreal",
-#          "Toronto", 
-#          "Berlin", 
-#          "NYC")
-# rfs <- c("Montreal", 
-#          "Toronto")
-# cfr_cities <- diffs_ref(db_can_oth, rfs, rgs, "Cities", 2.7)
-# 
-# 
-# 
-# # Provinces vs countries
-# ########################
-# 
-# rgs <- c("Spain",
-#          "Denmark",
-#          "Germany",
-#          "Italy",
-#          "Netherlands",
-#          "Sweden",
-#          "USA")
-# 
-# rfs <- c("Ontario",
-#          "Quebec")
-# 
-# diffs_ref(db_can_oth, rfs, rgs, "Provs_ctrs", 4)
-# 
-# unique(test$Region)
+
 
 
 lvs <- c("Canada", 
@@ -143,7 +65,6 @@ lvs <- c("Canada",
          "Netherlands",
          "Sweden",
          "USA",
-         "Switzerland",
          "Alberta",
          "British Columbia",
          "Ontario",
@@ -152,13 +73,16 @@ lvs <- c("Canada",
          "Saskatchewan",
          "Montreal",
          "Toronto", 
+         "Ottawa",
+         "Edmonton",
+         "Calgary",
          "Berlin", 
          "New York City",
-         "Madrid",
-         "Edmonton",
-         "Calgary")
+         "Madrid")
 
-test <- db2 %>% 
+test <- db %>% 
+  filter(Wave == 2,
+         Code != "CH") %>% 
   gather(Cases, Deaths, key = "Measure", value = Value) %>% 
   group_by(Code, Measure) %>% 
   filter(Date == max(Date)) %>% 
@@ -167,22 +91,19 @@ test <- db2 %>%
   mutate(val_p = ifelse(Measure == "Cases", val_p * -1, val_p),
          Region = factor(Region, levels = lvs))
 
-
-test %>% 
-  filter(Region == "Alberta",
-         Measure == "Cases") %>% 
-  mutate(Value = ifelse(Sex == "f", Value, -1*Value)) %>% 
-  ggplot()+
-  geom_area(aes(Age, Value, fill = Sex, col = Sex), alpha = 0.7)
+xmins <- test %>% select(val_p) %>% min * 1.01
+xmaxs <- test %>% select(val_p) %>% max * 1.01
 
 cols <- c("#2a9d8f", "#e76f51")
 
 test %>% 
+  filter(Type == "Country") %>%
   ggplot()+
   geom_bar(aes(Age, val_p, fill = Measure, col = Measure), stat = "identity", alpha = 0.5)+
   geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 1)+
   scale_x_continuous(breaks = seq(0, 100, 20))+
-  facet_wrap(~ Region)+
+  scale_y_continuous(limits = c(xmins, xmaxs))+
+  facet_wrap(~ Region, ncol = 4)+
   coord_flip()+
   scale_fill_manual(values = cols)+
   scale_color_manual(values = cols)+
@@ -190,15 +111,110 @@ test %>%
        y = "Distribution")+
   theme_bw()+
   theme(
+    plot.margin = margin(1,1,0,3,"mm"),
+    legend.position="none",
+    legend.title = element_text(size = tx),
+    legend.text = element_text(size = tx - 1),
+    legend.key.size = unit(0.5,"line"),
+    strip.background = element_rect(fill="transparent"),
+    strip.text = element_text(size = tx - 2, margin = margin(.5,.5,.5,.5, "mm")),
+    axis.ticks.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size = tx - 2),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+ggsave("Figures/s1a_age_distribution_countries.png", width = 4, height = 1.7)
+
+test %>% 
+  filter(Type == "Province",
+         !(Region == "Canada" & Type == "Province")) %>%
+  ggplot()+
+  geom_bar(aes(Age, val_p, fill = Measure, col = Measure), stat = "identity", alpha = 0.5)+
+  geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 1)+
+  scale_x_continuous(breaks = seq(0, 100, 20))+
+  scale_y_continuous(limits = c(xmins, xmaxs))+
+  facet_wrap(~ Region, ncol = 4)+
+  coord_flip()+
+  scale_fill_manual(values = cols)+
+  scale_color_manual(values = cols)+
+  labs(x = "Age",
+       y = "Distribution")+
+  theme_bw()+
+  theme(
+    plot.margin = margin(0,1,0,0,"mm"),
+    legend.position="none",
+    legend.title = element_text(size = tx),
+    legend.text = element_text(size = tx - 1),
+    legend.key.size = unit(0.5,"line"),
+    strip.background = element_rect(fill="transparent"),
+    strip.text = element_text(size = tx - 2, margin = margin(.5,.5,.5,.5, "mm")),
+    axis.ticks.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size = tx - 2),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = tx - 1)
+  )
+ggsave("Figures/s1b_age_distribution.png", width = 4, height = 1.7)
+
+test %>% 
+  filter(Type == "City") %>%
+  ggplot()+
+  geom_bar(aes(Age, val_p, fill = Measure, col = Measure), stat = "identity", alpha = 0.5)+
+  geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 1)+
+  scale_x_continuous(breaks = seq(0, 100, 20))+
+  scale_y_continuous(limits = c(xmins, xmaxs))+
+  facet_wrap(~ Region, ncol = 4)+
+  coord_flip()+
+  scale_fill_manual(values = cols)+
+  scale_color_manual(values = cols)+
+  labs(x = "Age",
+       y = "Distribution")+
+  theme_bw()+
+  theme(
+    plot.margin = margin(0,1,0,3,"mm"),
+    legend.margin = margin(0,0,0,0,"mm"),
     legend.position="bottom",
     legend.title = element_text(size = tx),
     legend.text = element_text(size = tx - 1),
     legend.key.size = unit(0.5,"line"),
     strip.background = element_rect(fill="transparent"),
-    strip.text = element_text(size = tx - 2),
-    axis.text.x = element_text(size = tx - 1.5),
-    axis.text.y = element_text(size = tx - 1),
-    axis.title.x = element_text(size = tx + 1),
-    axis.title.y = element_text(size = tx + 1)
+    strip.text = element_text(size = tx - 2, margin = margin(.5,.5,.5,.5, "mm")),
+    axis.text.x = element_text(size = tx - 2),
+    axis.text.y = element_text(size = tx - 2),
+    axis.title.x = element_text(size = tx),
+    axis.title.y = element_blank()
   )
-ggsave("Figures/age_distribution.png", width = 5, height = 6)
+ggsave("Figures/s1c_age_distribution.png", width = 4, height = 2.2)
+
+
+
+# 
+# 
+test %>% 
+  filter(!(Region == "Canada" & Type == "Province")) %>%
+  ggplot()+
+  geom_bar(aes(Age, val_p, fill = Measure, col = Measure), stat = "identity", alpha = 0.5)+
+  geom_hline(yintercept = 0, col = "black", size = 0.3, alpha = 1)+
+  scale_x_continuous(breaks = seq(0, 100, 20))+
+  facet_wrap(~ Region, scales = "free", ncol = 3)+
+  coord_flip()+
+  scale_fill_manual(values = cols)+
+  scale_color_manual(values = cols)+
+  labs(x = "Age",
+       y = "Distribution")+
+  theme_bw()+
+  theme(
+    plot.margin = margin(1,1,1,2,"mm"),
+    legend.position="none",
+    legend.title = element_text(size = tx),
+    legend.text = element_text(size = tx - 1),
+    legend.key.size = unit(0.5,"line"),
+    strip.background = element_rect(fill="transparent"),
+    strip.text = element_text(size = tx - 2, margin = margin(.5,.5,.5,.5, "mm")),
+    axis.text.x = element_text(size = tx - 2),
+    axis.text.y = element_text(size = tx - 2),
+    axis.title.x = element_text(size = tx - 2),
+    axis.title.y = element_text(size = tx - 2)
+  )
+ggsave("Figures/s1_age_distribution_countries.png", width = 4, height = 5)

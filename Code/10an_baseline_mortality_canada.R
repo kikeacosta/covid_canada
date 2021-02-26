@@ -86,13 +86,13 @@ db2 <- db %>%
 # Fitting all regions, sexes, and ages in Canada
 ################################################
 cts <- unique(db2$Region)
-cts <- c("British Columbia", "Alberta", "Manitoba", "Canada", "Ontario", "Quebec", "Quebec_isq")
-# cts <- c("Quebec")
+cts <- c("British Columbia", "Alberta", "Manitoba", "Canada", "Ontario", "Quebec", "Quebec_isq", "Saskatchewan")
+cts <- c("Saskatchewan")
 
 db_all_blns <- NULL
 skip_to_next <- F
 
-# c <- "Quebec"
+c <- "Saskatchewan"
 
 
 for (c in cts) {
@@ -131,6 +131,7 @@ for (c in cts) {
   }
 }
 
+# write_csv(db_all_blns, path = paste0("Output/baseline_mortality_sask.csv"))
 write_csv(db_all_blns, path = paste0("Output/baseline_mortality_", ym, ".csv"))
 detach(package:MASS)
 

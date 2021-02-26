@@ -1,12 +1,3 @@
-rm(list=ls())
-Sys.setenv(LANG = "en")
-Sys.setlocale("LC_ALL","English")
-
-library(tidyverse)
-library(lubridate)
-library(readxl)
-
-# setwd("U:/gits/covid_canada/")
 source("Code/00_functions.R")
 ############################################
 # Importing remaining life expectancy by age
@@ -18,7 +9,9 @@ regs <- c("Canada - ",
           "Que. - ",
           "Ont. - ",
           "Alta. - ",
-          "B.C. - ")
+          "B.C. - ",
+          "Man. - ",
+          "Sask. - ")
 
 sxs <- c("Both sexes", 
          "Males", 
@@ -46,11 +39,13 @@ for(rg in regs){
 }
 
 db_ex_ca2 <- db_ex_ca %>% 
-  mutate(Region = case_when(Region == "Canada - " ~ "All",
+  mutate(Region = case_when(Region == "Canada - " ~ "Canada",
                             Region == "Que. - " ~ "Quebec",
                             Region == "Ont. - " ~ "Ontario",
                             Region == "Alta. - " ~ "Alberta",
-                            Region == "B.C. - " ~ "BC"),
+                            Region == "B.C. - " ~ "British Columbia",
+                            Region == "Man. - " ~ "Manitoba",
+                            Region == "Sask. - " ~ "Saskatchewan"),
          Sex = case_when(Sex == "Both sexes" ~ "t",
                          Sex == "Males" ~ "m",
                          Sex == "Females" ~ "f"),

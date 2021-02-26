@@ -5,7 +5,7 @@ source("Code/00_functions.R")
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 countries <- c("CA", "DE", "CH", "DK", "ES", "SE", "IT", "NL", "US")
 provinces <- c("CA_ON", "CA_BC", "CA_AB", "CA_QC", "CA_MB", "CA_SK")
-cities <- c("ES_M", "US_NYC", "DE_BE", "CA_MTL", "CA_CAL", "CA_EDM", "CA_TNT")
+cities <- c("ES_M", "US_NYC", "DE_BE", "CA_MTL", "CA_CAL", "CA_EDM", "CA_TNT", "CA_OTW")
 
 # loading COVID data outside COVerAGE-DB 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -25,7 +25,8 @@ db_add2 <- db_add %>%
                        "Berlin" = "DE_BE",
                        "Italy" = "IT",
                        "Edmonton" = "CA_EDM",
-                       "Calgary" = "CA_CAL"),
+                       "Calgary" = "CA_CAL",
+                       "Ottawa" = "CA_OTW"),
          Value = round(Value),
          Country = recode(Region,
                           "Alberta" = "Canada",
@@ -49,8 +50,8 @@ db_add2 <- db_add %>%
 # osf_retrieve_file("7tnfh") %>%
 #   osf_download(path = "Data/", conflicts = "overwrite")
 
-db_cov <-  read_csv("Data/Output_5.zip",
-                    skip = 3)
+# db_cov <-  read_csv("Data/Output_5.zip",
+#                     skip = 3)
 
 # filtering coeuntries and Canadian provinces
 cds <- c("DE_",
@@ -65,12 +66,15 @@ cds <- c("DE_",
          "DE_BE_",
          "US")
 
-db_cov2 <- db_cov %>% 
-  mutate(Code = str_replace(Code, Date, ""),
-         Date = dmy(Date)) %>% 
-  filter(Country == "Canada" | Code %in% cds) %>% 
-  select(-Tests, -AgeInt) %>% 
-  drop_na()
+# db_cov2 <- db_cov %>% 
+#   mutate(Code = str_replace(Code, Date, ""),
+#          Date = dmy(Date)) %>% 
+#   filter(Country == "Canada" | Code %in% cds) %>% 
+#   select(-Tests, -AgeInt) %>% 
+#   drop_na()
+# 
+# write_rds(db_cov2, "Data/backup/coverage_filtered_v20210220.rds")
+db_cov2 <- read_rds("Data/backup/coverage_filtered_v20210220.rds")
 
 unique(db_cov3$Code)
 

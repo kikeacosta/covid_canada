@@ -32,3 +32,6 @@ Output/baseline_mortality_sask.csv
 Output/weekly_canada.rds
 Data/COVID19-eng.zip
 Data/covid19-download.csv
+Output/baseline_mortality_2010.csv
+Figures/backup_plots_210228
+Output/weekly_canada.rds

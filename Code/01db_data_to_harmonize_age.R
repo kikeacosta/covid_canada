@@ -281,8 +281,7 @@ db_cal_cases_feb <- db_alb_feb2 %>%
          Region = "Calgary")
 
 
-# merging alberta and cities in February
-
+# merging Alberta, Calgary, and Edmonton in February
 db_alb_feb3 <- bind_rows(db_ab_deaths_feb, db_ab_cases_feb, 
                          db_ed_deaths_feb, db_ed_cases_feb,
                          db_cal_deaths_feb, db_cal_cases_feb) %>% 

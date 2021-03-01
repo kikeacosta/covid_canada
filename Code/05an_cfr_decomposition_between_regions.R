@@ -35,17 +35,49 @@ db_cfr <- db2 %>%
          CFR_t = Deaths_t / Cases_t) %>% 
   ungroup()
 
+# Countries and Canada
+# ~~~~~~~~~~~~~~~~~~~~
 tx <- 8
 rfs <- c("Canada")
 cfr_cts_w1 <- diffs_ref(db_cfr, rfs, "Country", 1, 0.06, 2.5, 2)
 cfr_cts_w2 <- diffs_ref(db_cfr, rfs, "Country", 2, 0.02, 2.5, 2)
 
+# contribution of alpha and beta components (to absolute value of change)
+props <- 
+  cfr_cts_w2 %>% 
+  arrange(P2) %>% 
+  spread(Components, Value) %>% 
+  select(-c(P2cfr, P1cfr, t)) %>% 
+  mutate(abs_diff = abs(alpha) + abs(beta),
+         alpha_abs_prop = abs(alpha) / abs_diff,
+         beta_abs_prop = abs(beta) / abs_diff)
+
+props %>% 
+  summarise(alpha_abs_prop = mean(alpha_abs_prop),
+            beta_abs_prop = mean(beta_abs_prop))
+
+
 # Provinces and Canada
 # ~~~~~~~~~~~~~~~~~~~~
-
+tx <- 8
 rfs <- c("Canada")
 cfr_provs_w1 <- diffs_ref(db_cfr, rfs, "Province", 1, 0.07, 2, 4)
 cfr_provs_w2 <- diffs_ref(db_cfr, rfs, "Province", 2, 0.015, 2.5, 4)
+
+props_prs <- 
+  cfr_provs_w2 %>% 
+  arrange(P2) %>% 
+  spread(Components, Value) %>% 
+  select(-c(P2cfr, P1cfr, t)) %>% 
+  mutate(abs_diff = abs(alpha) + abs(beta),
+         alpha_abs_prop = abs(alpha) / abs_diff,
+         beta_abs_prop = abs(beta) / abs_diff)
+
+props_prs %>% 
+  summarise(alpha_abs_prop = mean(alpha_abs_prop),
+            beta_abs_prop = mean(beta_abs_prop))
+
+
 
 # Cities
 # ~~~~~~~~~~~~~~~~~~~~

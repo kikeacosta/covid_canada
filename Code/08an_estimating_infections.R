@@ -53,6 +53,7 @@ db_infs_all <- db_infs %>%
 
 
 levs <- c("Canada", "Alberta", "British Columbia", "Manitoba", "Saskatchewan", "Ontario", "Quebec")
+labs <- c("Canada", "Alberta", "BC", "Manitoba", "SK", "Ontario", "Quebec")
 levs_code <- c("CA", "AB", "BC", "MA", "SK", "ON", "QC")
 levs_age <- c("All", "40-49", "50-59", "60-69", "70-79", "80-89", "90+")
 unique(db_infs_can$Age)
@@ -60,7 +61,7 @@ unique(db_infs_can$Age)
 db_infs_can <- db_infs_all %>% 
   bind_rows(db_infs) %>% 
   mutate(age_type = ifelse(Age == "All", "All Ages", "By Age"),
-         Region = factor(Region, levels = levs),
+         Region = factor(Region, levels = levs, labels = labs),
          Age = recode(Age,
                       "40" = "40-49",
                       "50" = "50-59",
@@ -74,13 +75,13 @@ db_infs_can <- db_infs_all %>%
 tx <- 8
 db_infs_can %>% 
   ggplot()+
-  geom_bar(aes(Age, under, col = age_type, fill = age_type), stat="identity", alpha = 0.2)+
+  geom_point(aes(Age, under, col = age_type), alpha = 1)+
   geom_errorbar(aes(Age, under, ymin=under_l, ymax=under_u, col = age_type), width=.1) +
   facet_grid(Region ~ age_type, scales = "free_x", space = "free_x", switch="both")+
   geom_hline(yintercept = 1, linetype = "dashed")+
   scale_y_log10(breaks = c(0.1, 0.25, 0.5, 1, 2, 4), labels = percent_format(accuracy = 1L))+
-  scale_color_manual(values = c("black", "black"))+
-  scale_fill_manual(values = c("black", "transparent"))+
+  scale_color_manual(values = c("#e76f51", "#264653"))+
+  # scale_fill_manual(values = c("black", "transparent"))+
   theme_bw()+
   theme(
     panel.grid.minor = element_blank(),

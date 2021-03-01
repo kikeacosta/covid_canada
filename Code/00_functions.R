@@ -150,7 +150,6 @@ harmonize_age <- function(db, lambda = 100){
 
 # Kitagawa decomposition
 ########################
-# db <- db2
 kitagawa <- function(db, p1, p2){
   two <- db %>% 
     filter(Region %in% c(p1, p2))
@@ -260,6 +259,53 @@ diffs_ref <- function(db, rfs, geo_level, w, l, h, f){
   ggsave(paste0("Figures/", f, "_cfr_diff_reference_", geo_level, "_wave_", w, ".png"), width = 5, height = h)
   return(db_diffs_all)
 }
+
+
+# kitagawa function generalizable
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+apply_kitagawa <- function(db_d1, db_d2){
+  vals <- tibble(CFR1 = db_d1 %>%
+                   pull(CFR_t) %>%
+                   unique(),
+                 CFR2 = db_d2 %>%
+                   pull(CFR_t) %>%
+                   unique())
+  
+  cfr1 <- db_d1 %>%
+    select(Age, age_dist, CFR) %>%
+    rename(C1 = age_dist,
+           CFR1 = CFR)
+  
+  cfr2 <- db_d2 %>%
+    select(Age, age_dist, CFR) %>%
+    rename(C2 = age_dist,
+           CFR2 = CFR)
+  
+  cfrs <- left_join(cfr1, cfr2) %>%
+    mutate(d_C = C2 - C1,
+           d_CFR = CFR2 - CFR1,
+           a_C = (C2 + C1) * 0.5,
+           a_CFR = (CFR2 + CFR1) * 0.5)
+  
+  # decomposed into age and fatality component
+  cfrs_dec <- cfrs %>%
+    group_by() %>%
+    summarise(alpha = sum(d_C * a_CFR),
+              beta = sum(a_C * d_CFR)) %>%
+    ungroup() %>%
+    mutate(diff = alpha + beta) %>%
+    select(diff, alpha, beta)
+  
+  result <- bind_cols(vals, cfrs_dec) %>%
+    select(CFR1, CFR2, diff, alpha, beta)
+  
+  return(result)
+}
+
+
+
+
+
 
 
 # ungrouping remaining life expectancy
@@ -495,47 +541,6 @@ fit_baseline <- function(db2, a) {
 #   ggsave(paste0("Figures/cfr_diff_decomp_over_time_", p1, "_", p2, ".png"))
 # }
 
-# kitagawa function generalizable
-##################################
-
-# apply_kitagawa <- function(db_d1, db_d2){
-#   vals <- tibble(CFR1 = db_d1 %>% 
-#                    pull(CFR_t) %>% 
-#                    unique(),
-#                  CFR2 = db_d2 %>% 
-#                    pull(CFR_t) %>% 
-#                    unique())
-#   
-#   cfr1 <- db_d1 %>% 
-#     select(Age, age_dist, CFR) %>% 
-#     rename(C1 = age_dist, 
-#            CFR1 = CFR)
-#   
-#   cfr2 <- db_d2 %>% 
-#     select(Age, age_dist, CFR) %>% 
-#     rename(C2 = age_dist, 
-#            CFR2 = CFR)
-#   
-#   cfrs <- left_join(cfr1, cfr2) %>% 
-#     mutate(d_C = C2 - C1,
-#            d_CFR = CFR2 - CFR1,
-#            a_C = (C2 + C1) * 0.5,
-#            a_CFR = (CFR2 + CFR1) * 0.5)
-#   
-#   # decomposed into age and fatality component
-#   cfrs_dec <- cfrs %>% 
-#     group_by() %>% 
-#     summarise(alpha = sum(d_C * a_CFR),
-#               beta = sum(a_C * d_CFR)) %>%
-#     ungroup() %>% 
-#     mutate(diff = alpha + beta) %>% 
-#     select(diff, alpha, beta)
-#   
-#   result <- bind_cols(vals, cfrs_dec) %>% 
-#     select(CFR1, CFR2, diff, alpha, beta)
-#   
-#   return(result)
-# }
 
 # db_harm2 <- tibble()
 # 

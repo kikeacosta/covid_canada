@@ -40,7 +40,7 @@ db_cfr <- db2 %>%
 tx <- 8
 rfs <- c("Canada")
 cfr_cts_w1 <- diffs_ref(db_cfr, rfs, "Country", 1, 0.06, 2.5, 2)
-cfr_cts_w2 <- diffs_ref(db_cfr, rfs, "Country", 2, 0.02, 2.5, 2)
+cfr_cts_w2 <- diffs_ref(db_cfr, rfs, "Country", 2, 0.015, 2.5, 2)
 
 # contribution of alpha and beta components (to absolute value of change)
 props <- 

@@ -24,6 +24,20 @@ prs <-
     "Quebec",
     "Saskatchewan")
 
+db <- read_rds("Output/covid_data_all_ages_selected_regions_smoothed.rds")
+
+db_cts <- db %>% 
+  filter(region %in% cts) %>% 
+  mutate(region = factor(region, levels = cts))
+
+db_prs <- db %>% 
+  filter(region %in% prs) %>% 
+  mutate(region = factor(region, levels = prs))
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Canada and other countries
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 col_country <- 
   c("Spain" = "grey60",
     "Canada" = "black",
@@ -34,11 +48,6 @@ col_country <-
     "US" = "#1E8FCC",
     "Germany" = "#e7298a") 
 
-db <- read_rds("Output/covid_data_all_ages_selected_regions_smoothed.rds")
-
-db_cts <- db %>% 
-  filter(region %in% cts) %>% 
-  mutate(region = factor(region, levels = cts))
 
 d_max <- "2021-02-26"
 
@@ -153,16 +162,9 @@ db_cts %>%
   filter(date == max(date)) %>% 
   select(region, cfr)
 
-
-
-
 # ~~~~~~~~~~~~~~~~~~
 # Canadian provinces
 # ~~~~~~~~~~~~~~~~~~
-
-db_prs <- db %>% 
-  filter(region %in% prs) %>% 
-  mutate(region = factor(region, levels = prs))
 
 col_country <- c("Other Prairies" = "grey70",
                  "Alberta" = "#66a61e",
@@ -280,3 +282,60 @@ ggsave("Figures/3d_all_CFR_over_time_provinces.png", width = 5, height = 2.3)
 
 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# summary statistics by province and wave
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+waves <- db_prs %>% 
+  mutate(wave = case_when(date <= "2020-07-15" ~ "fst",
+                          date >= "2020-09-15" ~ "snd",
+                          TRUE ~ "0")) %>% 
+  group_by(region) %>% 
+  mutate(new_d = deaths - lag(deaths),
+         new_c = cases - lag(cases)) %>% 
+  replace_na(list(new_d = 0,
+                  new_c = 0))
+
+last <- db_prs %>% 
+  group_by(region) %>% 
+  filter(date == max(date)) %>% 
+  select(region, cases, deaths) %>% 
+  mutate(wave = "All")
+
+summary <- waves %>% 
+  group_by(region, wave) %>% 
+  summarise(cases = sum(new_c),
+            deaths = sum(new_d)) %>% 
+  ungroup() %>% 
+  filter(wave != "0") %>% 
+  bind_rows(last)
+
+sum_cases <- summary %>% 
+  select(-deaths) %>% 
+  spread(wave, cases) %>% 
+  mutate(waves = fst + snd,
+         prop_waves = waves / All,
+         prop_fst = fst / All,
+         prop_snd = snd / All)
+
+sum_deaths <- summary %>% 
+  select(-cases) %>% 
+  spread(wave, deaths) %>% 
+  mutate(waves = fst + snd,
+         prop_waves = waves / All,
+         prop_fst = fst / All,
+         prop_snd = snd / All)
+
+canada <- summary %>% 
+  filter(region == "Canada") %>% 
+  rename(all_cases = cases,
+         all_deaths = deaths) %>% 
+  select(-region)
+  
+sum_provs <- summary %>% 
+  filter(region != "Canada") %>% 
+  left_join(canada, by = "wave") %>% 
+  mutate(prop_cases = cases / all_cases,
+         prop_deaths = deaths / all_deaths)
+
+  

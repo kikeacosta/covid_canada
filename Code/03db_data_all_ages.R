@@ -66,8 +66,10 @@ pop <- bind_rows(pop_cts, pop_can)
 # for countries from John Hopkins Database
 deaths_cts <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv") %>%
   gather(date, deaths, 5:ncol(.)) %>%
-  rename(region = 'Country/Region') %>%
-  filter(region %in% ctrs) %>%
+  rename(region = 'Country/Region',
+         prov = 'Province/State') %>%
+  filter(region %in% ctrs,
+         !prov %in% exclude) %>%
   mutate(date = as.Date(date, "%m/%d/%y")) %>%
   group_by(region, date) %>%
   summarise(deaths = sum(deaths)) %>%

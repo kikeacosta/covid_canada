@@ -24,6 +24,7 @@ prs <-
     "Quebec",
     "Saskatchewan")
 
+<<<<<<< HEAD
 db <- read_rds("Output/covid_data_all_ages_selected_regions_smoothed.rds")
 
 db_cts <- db %>% 
@@ -38,6 +39,8 @@ db_prs <- db %>%
 # Canada and other countries
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+=======
+>>>>>>> 115d600b5f5c6c98d20c8dc59f3516a998d35da5
 col_country <- 
   c("Spain" = "grey60",
     "Canada" = "black",
@@ -48,6 +51,14 @@ col_country <-
     "US" = "#1E8FCC",
     "Germany" = "#e7298a") 
 
+<<<<<<< HEAD
+=======
+db <- read_rds("Output/covid_data_all_ages_selected_regions_smoothed.rds")
+
+db_cts <- db %>% 
+  filter(region %in% cts) %>% 
+  mutate(region = factor(region, levels = cts))
+>>>>>>> 115d600b5f5c6c98d20c8dc59f3516a998d35da5
 
 d_max <- "2021-02-26"
 
@@ -162,10 +173,23 @@ db_cts %>%
   filter(date == max(date)) %>% 
   select(region, cfr)
 
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> 115d600b5f5c6c98d20c8dc59f3516a998d35da5
 # ~~~~~~~~~~~~~~~~~~
 # Canadian provinces
 # ~~~~~~~~~~~~~~~~~~
 
+<<<<<<< HEAD
+=======
+db_prs <- db %>% 
+  filter(region %in% prs) %>% 
+  mutate(region = factor(region, levels = prs))
+
+>>>>>>> 115d600b5f5c6c98d20c8dc59f3516a998d35da5
 col_country <- c("Other Prairies" = "grey70",
                  "Alberta" = "#66a61e",
                  "Atlantic" = "#e6ab02",
@@ -282,6 +306,7 @@ ggsave("Figures/3d_all_CFR_over_time_provinces.png", width = 5, height = 2.3)
 
 
 
+<<<<<<< HEAD
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # summary statistics by province and wave
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -339,3 +364,5 @@ sum_provs <- summary %>%
          prop_deaths = deaths / all_deaths)
 
   
+=======
+>>>>>>> 115d600b5f5c6c98d20c8dc59f3516a998d35da5

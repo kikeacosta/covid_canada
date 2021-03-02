@@ -64,7 +64,10 @@ db_d_all_ages <- db_d_age %>%
   ungroup() %>% 
   mutate(Age = "All")
 
-# Ratios excess/confirmed
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+# Ratios confirmed/excess
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+
 db_d <- 
   bind_rows(db_d_age, db_d_all_ages) %>% 
   spread(Source, Deaths) %>% 
@@ -131,9 +134,25 @@ db_d %>%
 
 ggsave("Figures/6b_deaths_covid_vs_excess_ratio_can_conf_int.png", width = 4.5, height = 1.2)
 
-###########
+
+# only for summary statistics
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+# Ratios excess/confirmed
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+db_aberrant_excess <- 
+  bind_rows(db_d_age, db_d_all_ages) %>% 
+  spread(Source, Deaths) %>% 
+  mutate(Ratio = Excess / Diagnosed)
+
+
+
+
+
+
+# ~~~~~~~~~
 # Rates
-###########
+# ~~~~~~~~~
 
 db_r <- 
   bind_rows(db_d_age, db_d_all_ages) %>% 
@@ -157,13 +176,6 @@ db_r2 <- db_r %>%
          age_all = factor(age_all, 
                           levels = c("All ages excess", "By age excess", "All ages diagnosed", "By age diagnosed"),
                           labels = c("All_e", "Excess", "A_d", "Diagnosed")))
-
-# db_r_diag <- db_r %>% 
-#   filter(Source == "Diagnosed")
-# 
-# db_r_excs <- db_r %>% 
-#   filter(Source != "Diagnosed")
-
 
 db_r2 %>%
   filter(!Region %in% c("Manitoba", "Saskatchewan", "Quebec_isq")) %>% 

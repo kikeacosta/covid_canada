@@ -96,6 +96,7 @@ ggsave("Figures/s2_cfr_diff_between_waves.png", width = 5, height = 5)
 
 # average decrease in CFR between waves (63.1%)
 db_decomp2 %>% 
+  group_by(Type) %>% 
   summarise(mean(percent_dec))
 
 # average contribution of age and fatality components (53.3% and 46.7%)

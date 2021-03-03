@@ -237,3 +237,12 @@ db_r2 %>%
 
 ggsave("Figures/s4b_deaths_covid_vs_excess_rates_can_conf_int.png", width = 5, height = 1.6)
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# proportion of ecxess by age
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+props_by_age <- db_d %>% 
+  filter(Age != "All") %>% 
+  group_by(Region) %>% 
+  mutate(prop = Excess / sum(Excess)) %>% 
+  select(Region, Age, prop)

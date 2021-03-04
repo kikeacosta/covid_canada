@@ -303,11 +303,6 @@ apply_kitagawa <- function(db_d1, db_d2){
 }
 
 
-
-
-
-
-
 # ungrouping remaining life expectancy
 ungr_life_ex <- function(db, ax){
   ages <- db %>% pull(Age)

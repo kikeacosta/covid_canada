@@ -68,3 +68,95 @@ ifrs_ca_adj %>%
   theme_bw()
 
 write_rds(ifrs_ca_adj, "Output/ifr_age_sex_canada.rds")
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# sensitivity analysis with Verity estimates
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ifrs_ch <- read_csv("Data/IFR_age_Verity_et_al.csv")
+than_ch <- read_rds("Output/thanat_age_canada_china.rds")
+
+
+ifrs_ch2 <- ifrs_ch %>% 
+  rename(Central = IFR,
+         Lower = IFR_l,
+         Upper = IFR_u) %>% 
+  gather(-Age, key = Estimate, value = IFR)
+
+ax <- 5
+
+db_ungr_ifrs <- NULL
+es <- unique(ifrs_ch2$Estimate)
+for(e in es){
+  temp1 <- ifrs_ch2 %>% 
+    filter(Estimate == e) 
+  temp2 <- ungr_ifrs(temp1, ax) %>% 
+    mutate(Estimate = e)
+  db_ungr_ifrs <- db_ungr_ifrs %>% 
+    bind_rows(temp2)
+}
+
+
+db_ungr_ifrs2 <- db_ungr_ifrs %>% 
+  mutate(Type = "Ungrouped")
+
+ifrs_ch3 <- ifrs_ch2 %>% 
+  mutate(Type = "Grouped",
+         Age = Age + 5) %>% 
+  bind_rows(db_ungr_ifrs2)
+
+e <- "Lower"
+ifrs_ch3 %>% 
+  filter(Estimate == e) %>% 
+  ggplot()+
+  geom_point(aes(Age, IFR, col = Type), alpha = 0.5)+
+  scale_y_log10()
+
+ifrs_ch3 %>% 
+  filter(Type == "Ungrouped") %>% 
+  spread(Estimate, IFR) %>% 
+  ggplot()+
+  geom_line(aes(Age, Central))+
+  geom_ribbon(aes(Age, ymin = Lower, ymax = Upper), alpha = 0.3)+
+  scale_x_continuous(breaks = seq(0, 100, 10))+
+  scale_y_log10()+
+  scale_color_manual(values = c("red", "black", "blue"))+
+  scale_fill_manual(values = c("red", "black", "blue"))+
+  theme_bw()+
+  labs(y = "IFR")
+
+write_csv(db_ungr_ifrs2,  "Output/verity_age_ifr_single_years.csv")
+
+
+# attributing IFR from China to Canada
+ifrs_ca_ch <- than_ch %>% 
+  left_join(db_ungr_ifrs2 %>% 
+              rename(Age_ch = Age)) %>% 
+  mutate(Source = "China") %>% 
+  select(-Age_ch)
+
+ifrs_ca_ch_adj <- NULL
+rs <- unique(ifrs_ca_ch$Region)
+for(r in rs){
+    for(e in es){
+      temp1 <- ifrs_ca_ch %>% 
+        filter(Region == r,
+               Estimate == e)
+      ifrs_ca_ch_adj <- ifrs_ca_ch_adj %>% 
+        bind_rows(ungr_ifrs(temp1, 0.5) %>% 
+                    mutate(Region = r,
+                           Estimate = e))  
+    }
+}
+
+ifrs_ca_ch_adj %>%
+  filter(Region == "Manitoba") %>%
+  ggplot()+
+  geom_line(aes(Age, IFR, col = Estimate))+
+  scale_y_log10()+
+  labs(title = "Age-specific IFR, from China estimates")+
+  theme_bw()
+
+write_rds(ifrs_ca_ch_adj, "Output/ifr_age_sex_canada_verity.rds")
+

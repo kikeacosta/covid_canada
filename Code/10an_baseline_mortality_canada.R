@@ -25,10 +25,6 @@ db <- read_rds("Output/weekly_canada.rds")
 
 # definition of flu seasons and heat waves in Canada 
 ####################################################
-# Euromomo definition
-exc_type <- "emomo" 
-flu_season <- c(seq(1, 14, 1), seq(46, 53, 1))
-flu_season <- c(seq(1, 20, 1), seq(40, 53, 1))
 flu_season <- c(seq(1, 4, 1), seq(48, 53, 1))
 # heat_waves <- seq(27, 35, 1)
 heat_waves <- 54

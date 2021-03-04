@@ -3,9 +3,6 @@ Sys.setenv(LANG = "en")
 Sys.setlocale("LC_ALL","English")
 detach(package:MASS)
 
-library(tidyverse)
-library(lubridate)
-library(readxl)
 source("Code/00_functions.R")
 
 # provisionally, only for the main provinces and national
@@ -47,13 +44,12 @@ deaths2 <- deaths %>%
                          Sex == "Females" ~ "f"),
          Deaths = as.integer(Deaths))
 
-
 unique(deaths2$Age)
 unique(deaths2$Region)
 table(deaths2$Region)
 
-r <- "Manitoba"
-a <- "65"
+r <- "Alberta"
+a <- "0"
 
 deaths2 %>% 
   filter(Region == r,

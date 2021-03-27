@@ -3,16 +3,6 @@ source("Code/00_functions.R")
 
 db <- read_rds("Output/covid_data_by_age_sex.rds")
 
-# Aggregating in 10-year age groups
-# age_int <- 10
-# db2 <- db %>%
-#   mutate(Age = floor(Age / age_int) * age_int) %>%
-#   group_by(Region, Code, Date, Sex, Age, Type, Wave) %>%
-#   summarise(Cases = sum(Cases),
-#             Deaths = sum(Deaths)) %>%
-#   ungroup()
-
-
 # adding Canada in the Provinces subset
 can_prov <- db %>% 
   filter(Region == "Canada") %>% 
@@ -20,14 +10,57 @@ can_prov <- db %>%
 
 db2 <- db %>% 
   filter(Code != "CH") %>% 
-  bind_rows(can_prov)
+  bind_rows(can_prov) %>% 
+  mutate(Wave = recode(Wave,
+                       "2" = "1_2",
+                       "1" = "1"))
 
 
+# ========================================================
+# Estimating Covid data exclusively during the second wave
+# ========================================================
+
+db_wave1 <- db2 %>% 
+  filter(Wave == "1") %>% 
+  select(Country, Region, Code, Sex, Age, Cases, Deaths, Type) %>% 
+  rename(Cases1 = Cases,
+         Deaths1 = Deaths)
+
+db_wave1_2 <- db2 %>% 
+  filter(Wave == "1_2") %>% 
+  select(Country, Region, Code, Sex, Age, Cases, Deaths, Type) %>% 
+  rename(Cases1_2 = Cases,
+         Deaths1_2 = Deaths)
+
+unique(db_wave1_2$Region)
+
+db_wave2_prairies <- db_wave1_2 %>% 
+  filter(Region %in% c("Manitoba", "Saskatchewan")) %>% 
+  rename(Cases = Cases1_2,
+         Deaths = Deaths1_2) 
+
+db_wave2 <- db_wave1 %>% 
+  left_join(db_wave1_2) %>% 
+  mutate(Cases2 = Cases1_2 - Cases1,
+         Deaths2 = Deaths1_2 - Deaths1) %>% 
+  select(-Cases1_2, -Cases1, -Deaths1_2, -Deaths1) %>% 
+  rename(Cases = Cases2,
+         Deaths = Deaths2) %>% 
+  bind_rows(db_wave2_prairies) %>% 
+  mutate(Wave = "2")
+
+db3 <- db2 %>% 
+  select(-Date) %>% 
+  bind_rows(db_wave2) %>% 
+  arrange(Wave, Country, Region, Age)
+
+
+# ======================================
 # CFR decomposition at one specific date
-########################################
+# ======================================
 
-db_cfr <- db2 %>% 
-  group_by(Region, Code, Date, Type) %>% 
+db_cfr <- db3 %>% 
+  group_by(Region, Code, Type, Wave) %>% 
   mutate(CFR = Deaths / Cases,
          age_dist = Cases / sum(Cases),
          Cases_t = sum(Cases),
@@ -39,8 +72,9 @@ db_cfr <- db2 %>%
 # ~~~~~~~~~~~~~~~~~~~~
 tx <- 8
 rfs <- c("Canada")
-cfr_cts_w1 <- diffs_ref(db_cfr, rfs, "Country", 1, 0.06, 2.5, 2)
-cfr_cts_w2 <- diffs_ref(db_cfr, rfs, "Country", 2, 0.015, 2.5, 2)
+cfr_cts_w1 <- diffs_ref(db_cfr, rfs, "Country", "1", 0.06, 2.5, 2)
+cfr_cts_w1_2 <- diffs_ref(db_cfr, rfs, "Country", "1_2", 0.015, 2.5, 2)
+cfr_cts_w2 <- diffs_ref(db_cfr, rfs, "Country", "2", 0.015, 2.5, 2)
 
 # contribution of alpha and beta components (to absolute value of change)
 props <- 
@@ -61,8 +95,9 @@ props %>%
 # ~~~~~~~~~~~~~~~~~~~~
 tx <- 8
 rfs <- c("Canada")
-cfr_provs_w1 <- diffs_ref(db_cfr, rfs, "Province", 1, 0.07, 2, 4)
-cfr_provs_w2 <- diffs_ref(db_cfr, rfs, "Province", 2, 0.015, 2.5, 4)
+cfr_provs_w1 <- diffs_ref(db_cfr, rfs, "Province", "1", 0.07, 2, 4)
+cfr_provs_w1_2 <- diffs_ref(db_cfr, rfs, "Province", "1_2", 0.015, 2.5, 4)
+cfr_provs_w2 <- diffs_ref(db_cfr, rfs, "Province", "2", 0.015, 2.5, 4)
 
 props_prs <- 
   cfr_provs_w2 %>% 
@@ -78,16 +113,38 @@ props_prs %>%
             beta_abs_prop = mean(beta_abs_prop))
 
 
-
 # Cities
-# ~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~
 rfs <- c("Toronto")
-cfr_city_w1 <- diffs_ref(db_cfr, rfs, "City", 1, 0.1, 2, 5)
-cfr_city_w2 <- diffs_ref(db_cfr, rfs, "City", 2, 0.025, 2.5, 5)
+cfr_city_w1 <- diffs_ref(db_cfr, rfs, "City", "1", 0.1, 2, 5)
+cfr_city_w1_2 <- diffs_ref(db_cfr, rfs, "City", "1_2", 0.025, 2.5, 5)
+cfr_city_w2 <- diffs_ref(db_cfr, rfs, "City", "2", 0.025, 2.5, 5)
 
 
 
+# ===================
+# Plots of CFR by age  
+# ===================
 
+db_cfr %>% 
+  filter(Type == "Province",
+         Age >= 50) %>% 
+  ggplot()+
+  geom_point(aes(Age, CFR, col = Region))+
+  facet_wrap(~ Wave)
+
+db_cfr %>% 
+  filter(Type == "Country",
+         Age >= 50) %>% 
+  ggplot()+
+  geom_point(aes(Age, CFR, col = Region))+
+  facet_wrap(~ Wave)
+
+
+
+# ============================================
+# Plots of age composition of cases and deaths 
+# ============================================
 
 lvs <- c("Canada", 
          "Spain",

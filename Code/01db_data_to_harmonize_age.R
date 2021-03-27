@@ -5,24 +5,27 @@ email <- "kikepaila@gmail.com"
 drive_auth(email = email)
 gs4_auth(email = email)
 
-# Ontario and Toronto Jul 15 2020
+# Ontario Jul 15 2020
 # on_link <- "https://docs.google.com/spreadsheets/d/1jy0I5FYEQ28xILTkqE5NomLINQV7ERSsxm7guaoZ81A/edit#gid=1086950234"
 # Alberta Jul 15 2020
 # ab_link <- "https://docs.google.com/spreadsheets/d/1Q4YLL0l1RZ52gBR4M2LSXYOnXa38WLtKRvbLKS3rlC0/edit#gid=573062633"
 # Germany and Berlin Jul 15 2020
 # de_link <- "https://docs.google.com/spreadsheets/d/1ojjUdXSYLG6wwY5aGS48QBKc_56z8gbgoewYILC1owE/edit#gid=1067163235"
+
+# data All Ontario Jul 15 2020
+db_on20 <- read_csv("Data/backup/ontario_data_20200715.csv")
 # data All Ontario Feb 24 2021
-db_tnt <- read_csv("Data/backup/ontario_data_20210224.csv")
-# data for Alberta in February 23 2021
-db_alb_feb <- read_csv("Data/backup/alberta_data_20210223.csv")
+db_on21 <- read_csv("Data/backup/ontario_data_20210224.csv")
+# data All Alberta Jul 15 2020
+db_ab20 <- read_csv("Data/backup/alberta_data_20200715.csv")
+# data All Alberta Feb 23 2021
+db_ab21 <- read_csv("Data/backup/alberta_data_20210223.csv")
 
-# ~~~~~~~~
-# Ontario
-# ~~~~~~~~
 
-db_on <- read_csv("Data/backup/ontario_data_20200715.csv")
-
-db_on2 <- db_on %>% 
+# ~~~~~~~~~~~~~~~~~~~~~
+# Ontario, July 15 2020
+# ~~~~~~~~~~~~~~~~~~~~~
+db_on20_2 <- db_on20 %>% 
   rename(Age = 6,
          Sex = 7,
          outcome = 9,
@@ -36,9 +39,9 @@ db_on2 <- db_on %>%
                          Sex == "MALE" ~ "m",
                          TRUE ~ "UNK"))
 
-table(db_on2$Age)
+table(db_on20_2$Age)
 
-db_on_deaths <- db_on2 %>% 
+db_on20_deaths <- db_on20_2 %>% 
   filter(outcome == "Fatal") %>% 
   group_by(Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
@@ -46,22 +49,22 @@ db_on_deaths <- db_on2 %>%
   complete(Sex, Age, fill = list(Value = 0)) %>% 
   mutate(Measure = "Deaths")
 
-db_on_cases <- db_on2 %>% 
+db_on20_cases <- db_on20_2 %>% 
   group_by(Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
   ungroup() %>% 
   complete(Sex, Age, fill = list(Value = 0)) %>% 
   mutate(Measure = "Cases")
 
-db_on3 <- bind_rows(db_on_deaths, db_on_cases) %>% 
+db_on20_3 <- bind_rows(db_on20_deaths, db_on20_cases) %>% 
   mutate(Region = "Ontario")
 
 # ~~~~~~~~
-# Toronto
+# Toronto July 2020
 # ~~~~~~~~
 
 # July 15 2020
-db_to_deaths <- db_on2 %>% 
+db_to20_deaths <- db_on20_2 %>% 
   filter(place == "Toronto",
          outcome == "Fatal") %>% 
   group_by(Sex, Age) %>% 
@@ -70,7 +73,7 @@ db_to_deaths <- db_on2 %>%
   complete(Sex, Age, fill = list(Value = 0)) %>% 
   mutate(Measure = "Deaths")
 
-db_to_cases <- db_on2 %>% 
+db_to20_cases <- db_on20_2 %>% 
   filter(place == "Toronto") %>% 
   group_by(Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
@@ -78,14 +81,23 @@ db_to_cases <- db_on2 %>%
   complete(Sex, Age, fill = list(Value = 0)) %>% 
   mutate(Measure = "Cases")
 
-db_to3 <- bind_rows(db_to_deaths, db_to_cases) %>% 
+db_to20 <- bind_rows(db_to20_deaths, db_to20_cases) %>% 
   mutate(Region = "Toronto")
 
+# all ontario 2020
+# ~~~~~~~~~~~~~~~~
+db_on20_all <- bind_rows(db_to20,
+                         db_on20_3) %>% 
+  group_by(Region, Measure, Age) %>% 
+  summarise(Value = sum(Value)) %>% 
+  ungroup() %>% 
+  mutate(Date = ymd("2020-07-15"))
 
-# Toronto February 2021
-# ~~~~~~~~~~~~~
 
-db_tnt2 <- db_tnt %>% 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+# Ontario, February 24 2021
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+db_on21_2 <- db_on21 %>% 
   rename(Age = 6,
          Sex = 7,
          outcome = 9,
@@ -100,7 +112,31 @@ db_tnt2 <- db_tnt %>%
                          Sex == "MALE" ~ "m",
                          TRUE ~ "UNK"))
 
-db_to_deaths_feb <- db_tnt2 %>% 
+table(db_on21_2$Age)
+table(db_on21_2$place)
+
+db_on21_deaths <- db_on21_2 %>% 
+  filter(outcome == "Fatal") %>% 
+  group_by(Sex, Age) %>% 
+  summarise(Value = sum(n())) %>% 
+  ungroup() %>% 
+  complete(Sex, Age, fill = list(Value = 0)) %>% 
+  mutate(Measure = "Deaths")
+
+db_on21_cases <- db_on21_2 %>% 
+  group_by(Sex, Age) %>% 
+  summarise(Value = sum(n())) %>% 
+  ungroup() %>% 
+  complete(Sex, Age, fill = list(Value = 0)) %>% 
+  mutate(Measure = "Cases")
+
+db_on21_3 <- bind_rows(db_on21_deaths, db_on21_cases) %>% 
+  mutate(Region = "Ontario")
+
+# ~~~~~~~~~~~~~~~~~~~~~
+# Toronto February 2021
+# ~~~~~~~~~~~~~~~~~~~~~
+db_to21_deaths <- db_on21_2 %>% 
   filter(place == "Toronto",
          outcome == "Fatal") %>% 
   group_by(Sex, Age) %>% 
@@ -109,7 +145,7 @@ db_to_deaths_feb <- db_tnt2 %>%
   complete(Sex, Age, fill = list(Value = 0)) %>% 
   mutate(Measure = "Deaths")
 
-db_to_cases_feb <- db_tnt2 %>% 
+db_to21_cases <- db_on21_2 %>% 
   filter(place == "Toronto") %>% 
   group_by(Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
@@ -117,18 +153,18 @@ db_to_cases_feb <- db_tnt2 %>%
   complete(Sex, Age, fill = list(Value = 0)) %>% 
   mutate(Measure = "Cases")
 
-db_tnt_feb <- bind_rows(db_to_deaths_feb, db_to_cases_feb) %>% 
+db_to21 <- bind_rows(db_to21_deaths, db_to21_cases) %>% 
   mutate(Region = "Toronto") %>% 
   group_by(Region, Measure, Age) %>% 
   summarise(Value = sum(Value)) %>% 
-  ungroup() %>% 
-  mutate(Date = ymd("2021-02-24"))
+  ungroup() 
 
+# ~~~~~~~~~~~~~~~~~~~~~
+# Ottawa February 2021
+# ~~~~~~~~~~~~~~~~~~~~~
+unique(db_on21_2$place)
 
-# Ottawa
-unique(db_tnt2$place)
-
-db_ot_deaths_feb <- db_tnt2 %>% 
+db_ot21_deaths <- db_on21_2 %>% 
   filter(place == "Ottawa",
          outcome == "Fatal") %>% 
   group_by(Sex, Age) %>% 
@@ -137,7 +173,7 @@ db_ot_deaths_feb <- db_tnt2 %>%
   complete(Sex, Age, fill = list(Value = 0)) %>% 
   mutate(Measure = "Deaths")
 
-db_ot_cases_feb <- db_tnt2 %>% 
+db_ot21_cases <- db_on21_2 %>% 
   filter(place == "Ottawa") %>% 
   group_by(Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
@@ -145,27 +181,27 @@ db_ot_cases_feb <- db_tnt2 %>%
   complete(Sex, Age, fill = list(Value = 0)) %>% 
   mutate(Measure = "Cases")
 
-db_ott_feb <- bind_rows(db_ot_deaths_feb, db_ot_cases_feb) %>% 
+db_ot21 <- bind_rows(db_ot21_cases, db_ot21_deaths) %>% 
   mutate(Region = "Ottawa") %>% 
   group_by(Region, Measure, Age) %>% 
   summarise(Value = sum(Value)) %>% 
   ungroup() %>% 
-  mutate(Date = ymd("2021-02-24")) %>% 
-  complete(Region, Measure, Age, Date, fill = list(Value = 0))
+  complete(Region, Measure, Age, fill = list(Value = 0))
 
+# all Ontario 2021
+# ~~~~~~~~~~~~~~~~
+db_on21_all <- bind_rows(db_to21,
+                         db_ot21,
+                         db_on21_3) %>% 
+  group_by(Region, Measure, Age) %>% 
+  summarise(Value = sum(Value)) %>% 
+  ungroup() %>% 
+  mutate(Date = ymd("2021-02-24"))
 
-
-# ~~~~~~~~
-# Alberta
-# ~~~~~~~~
-# reading Alberta data from Drive
-# db_ab <- read_sheet(ab_link, 
-#                     sheet = "Data_15.07.2020.csv", 
-#                     na = "NA")
-
-db_ab <- read_csv("Data/backup/alberta_data_20200715.csv")
-
-db_ab2 <- db_ab %>% 
+# ~~~~~~~~~~~~~~~~~
+# Alberta July 2020
+# ~~~~~~~~~~~~~~~~~
+db_ab20_2 <- db_ab20 %>% 
   rename(Age = 5,
          Sex = 4,
          outcome = 6,
@@ -180,30 +216,36 @@ db_ab2 <- db_ab %>%
                          Age == "Unknown" ~ "UNK",
                          TRUE ~ Age))
 
-ages <- unique(db_ab2$Age)
+ages <- unique(db_ab20_2$Age)
 
-db_ab_deaths <- db_ab2 %>% 
+db_ab20_deaths <- db_ab20_2 %>% 
   filter(outcome == "Died") %>% 
   group_by(Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
   ungroup() %>% 
   complete(Sex, Age = ages, fill = list(Value = 0)) %>% 
-  mutate(Measure = "Deaths")
+  mutate(Measure = "Deaths",
+         Region = "Alberta")
 
-db_ab_cases <- db_ab2 %>% 
+db_ab20_cases <- db_ab20_2 %>% 
   group_by(Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
   ungroup() %>% 
   complete(Sex, Age = ages, fill = list(Value = 0)) %>% 
-  mutate(Measure = "Cases")
+  mutate(Measure = "Cases",
+         Region = "Alberta")
 
-db_ab3 <- bind_rows(db_ab_deaths, db_ab_cases) %>% 
-  mutate(Region = "Alberta") 
+db_ab20_all <- bind_rows(db_ab20_deaths, db_ab20_cases) %>% 
+  group_by(Region, Measure, Age) %>% 
+  summarise(Value = sum(Value)) %>% 
+  ungroup() %>% 
+  mutate(Region = "Alberta",
+         Date = ymd("2020-07-15"))
 
-
-
+# ~~~~~~~~~~~~~~~~
 # Alberta Feb 2021
-db_alb_feb2 <- db_alb_feb %>% 
+# ~~~~~~~~~~~~~~~~
+db_ab21_2 <- db_ab21 %>% 
   rename(Age = 4,
          Sex = 3,
          outcome = 5,
@@ -218,11 +260,11 @@ db_alb_feb2 <- db_alb_feb %>%
                          Age == "Unknown" ~ "UNK",
                          TRUE ~ Age))
 
-ages <- unique(db_alb_feb2$Age)
+ages <- unique(db_ab21_2$Age)
 
-unique(db_alb_feb2$outcome)
+unique(db_ab21_2$outcome)
 
-db_ab_deaths_feb <- db_alb_feb2 %>% 
+db_ab21_deaths <- db_ab21_2 %>% 
   filter(outcome == "Died") %>% 
   group_by(Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
@@ -231,7 +273,7 @@ db_ab_deaths_feb <- db_alb_feb2 %>%
   mutate(Measure = "Deaths",
          Region = "Alberta")
 
-db_ab_cases_feb <- db_alb_feb2 %>% 
+db_ab21_cases <- db_ab21_2 %>% 
   group_by(Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
   ungroup() %>% 
@@ -239,52 +281,41 @@ db_ab_cases_feb <- db_alb_feb2 %>%
   mutate(Measure = "Cases",
          Region = "Alberta")
 
-# Edmonton
-db_ed_deaths_feb <- db_alb_feb2 %>% 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+# Edmonton and Calgary 2021
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+db_ed_ca_deaths <- db_ab21_2 %>% 
   filter(outcome == "Died",
-         place == "Edmonton Zone") %>% 
-  group_by(Sex, Age) %>% 
+         place %in% c("Edmonton Zone", "Calgary Zone")) %>%
+  group_by(place, Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
   ungroup() %>% 
-  complete(Sex, Age = ages, fill = list(Value = 0)) %>% 
+  complete(place, Sex, Age = ages, fill = list(Value = 0)) %>% 
   mutate(Measure = "Deaths",
-         Region = "Edmonton")
+         Region = recode(place,
+                         "Edmonton Zone" = "Edmonton",
+                         "Calgary Zone" = "Calgary")) %>% 
+  select(-place)
 
-db_ed_cases_feb <- db_alb_feb2 %>% 
-  filter(place == "Edmonton Zone") %>% 
-  group_by(Sex, Age) %>% 
+db_ed_ca_cases <- db_ab21_2 %>% 
+  filter(place %in% c("Edmonton Zone", "Calgary Zone")) %>% 
+  group_by(place, Sex, Age) %>% 
   summarise(Value = sum(n())) %>% 
   ungroup() %>% 
-  complete(Sex, Age = ages, fill = list(Value = 0)) %>% 
+  complete(place, Sex, Age = ages, fill = list(Value = 0)) %>% 
   mutate(Measure = "Cases",
-         Region = "Edmonton")
-
-
-# Calgary
-db_cal_deaths_feb <- db_alb_feb2 %>% 
-  filter(outcome == "Died",
-         place == "Calgary Zone") %>% 
-  group_by(Sex, Age) %>% 
-  summarise(Value = sum(n())) %>% 
-  ungroup() %>% 
-  complete(Sex, Age = ages, fill = list(Value = 0)) %>% 
-  mutate(Measure = "Deaths",
-         Region = "Calgary")
-
-db_cal_cases_feb <- db_alb_feb2 %>% 
-  filter(place == "Calgary Zone") %>% 
-  group_by(Sex, Age) %>% 
-  summarise(Value = sum(n())) %>% 
-  ungroup() %>% 
-  complete(Sex, Age = ages, fill = list(Value = 0)) %>% 
-  mutate(Measure = "Cases",
-         Region = "Calgary")
+         Region = recode(place,
+                         "Edmonton Zone" = "Edmonton",
+                         "Calgary Zone" = "Calgary")) %>% 
+  select(-place)
 
 
 # merging Alberta, Calgary, and Edmonton in February
-db_alb_feb3 <- bind_rows(db_ab_deaths_feb, db_ab_cases_feb, 
-                         db_ed_deaths_feb, db_ed_cases_feb,
-                         db_cal_deaths_feb, db_cal_cases_feb) %>% 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+db_ab21_all <- bind_rows(db_ab21_deaths,
+                         db_ab21_cases,
+                         db_ed_ca_deaths,
+                         db_ed_ca_cases) %>% 
   group_by(Region, Measure, Age) %>% 
   summarise(Value = sum(Value)) %>% 
   ungroup() %>% 
@@ -294,19 +325,13 @@ db_alb_feb3 <- bind_rows(db_ab_deaths_feb, db_ab_cases_feb,
 
 # all data in Ontario and Alberta
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-db_ont_alb <- bind_rows(db_to3, db_on3, db_ab3) %>% 
-  group_by(Region, Measure, Age) %>% 
-  summarise(Value = sum(Value)) %>% 
-  ungroup() %>% 
-  mutate(Date = ymd("2020-07-15")) %>% 
-  bind_rows(db_tnt_feb,
-            db_alb_feb3, 
-            db_ott_feb)
+db_on_ab <- bind_rows(db_on20_all,
+                      db_on21_all,
+                      db_ab20_all,
+                      db_ab21_all)
 
-write_rds(db_ont_alb, "Output/ontario_alberta20200715.rds")
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-db_ont_alb <- 
-  read_rds("Output/ontario_alberta20200715.rds")
 
 # ~~~~~~~~~~~~~~~~~~
 # Germany and Berlin
@@ -378,7 +403,7 @@ db_feb2 <- db_feb %>%
 # appending all data
 # ~~~~~~~~~~~~~~~~~~~
 db_all <- 
-  bind_rows(db_feb2, db_de_all_sex, db_ont_alb)
+  bind_rows(db_feb2, db_de_all_sex, db_on_ab)
 
 # imputing unknown ages
 # ~~~~~~~~~~~~~~~~~~~~
@@ -389,7 +414,6 @@ db_all2 <- imput_age(db_all) %>%
 
 # harmonizing age groups
 ########################
-
 pps <- unique(db_all2$Region)
 
 db_harm2 <- tibble()
@@ -434,6 +458,11 @@ db_harm3 <- db_harm2 %>%
 write_rds(db_harm3, "Output/additional_covid_harmonized.rds")
 
 
-
+db_harm3 %>% 
+  filter(Region == "Ontario") %>% 
+  spread(Measure, Value) %>% 
+  mutate(CFR = Deaths / Cases) %>% 
+  ggplot()+
+  geom_point(aes(Age, CFR, col = Date))
 
 

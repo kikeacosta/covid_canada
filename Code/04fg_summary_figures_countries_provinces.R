@@ -57,7 +57,7 @@ limx <- max(db_cts$date) + 4
 
 tx <- 8
 
-db_cts %>%
+p_world_a <- db_cts %>%
   ggplot(aes(date, new_c_pcp_sm, col = region))+
   geom_line(size = .5, alpha = .9) +
   scale_y_continuous(limits = c(0, 800)) +
@@ -70,17 +70,17 @@ db_cts %>%
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(2,1,0,1,"mm"),
+    plot.margin = margin(1,1,0.5,1,"mm"),
     plot.title = element_text(size=tx-1),
     axis.text.x = element_blank(),
-    axis.text.y = element_text(size=tx-2),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
     axis.title.x = element_blank(),
     axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/1a_new_cases_world.png", width = 5, height = 1.4)
+# ggsave("Figures/1a_new_cases_world.png", width = 5, height = 1.4)
 
-db_cts %>%
+p_world_b <- db_cts %>%
   ggplot(aes(date, new_d_pcp_sm, col = region))+
   geom_line(size = .5, alpha = .9) +
   scale_y_continuous(limits = c(0, 18)) +
@@ -93,17 +93,17 @@ db_cts %>%
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(0,1,0,1,"mm"),
+    plot.margin = margin(0.5,1,0.5,1,"mm"),
     plot.title = element_text(size=tx-1),
     axis.text.x = element_blank(),
-    axis.text.y = element_text(size=tx-2),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size=tx-2, margin = margin(0, 3, 0, 0,"mm"))
+    axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/1b_new_deaths_world.png", width = 5, height = 1.4)
+# ggsave("Figures/1b_new_deaths_world.png", width = 5, height = 1.4)
 
-db_cts %>%
+p_world_c <- db_cts %>%
   ggplot(aes(date, pos, col = region))+
   geom_line(size = .5, alpha = .9) +
   scale_y_continuous(labels = percent_format(accuracy = 1L), limits = c(0, 0.4)) +
@@ -117,21 +117,21 @@ db_cts %>%
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(1,1,1,1,"mm"),
+    plot.margin = margin(0.5,1,0.5,1,"mm"),
     plot.title = element_text(size=tx-1),
     axis.text.x = element_blank(),
-    axis.text.y = element_text(size=tx-2),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
     axis.title.x = element_blank(),
     axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/1c_pos_rate_world.png", width = 5, height = 1.4)
+# ggsave("Figures/1c_pos_rate_world.png", width = 5, height = 1.4)
 
-db_cts %>%
+p_world_d <- db_cts %>%
   ggplot(aes(date, cfr_sm, col = region))+
   geom_line(aes(size = country), size = .5, alpha = .9) +
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
-  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%b/%Y")+
+  scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%b/%y")+
   scale_colour_manual(values = col_country)+
   scale_size_manual(values = c(1,1,1,1,1,1,1,2))+
   annotate(geom = "text", label = "D", 
@@ -145,16 +145,24 @@ db_cts %>%
     legend.position = "bottom",
     legend.title = element_text(size=tx),
     legend.text = element_text(size=tx-1),
-    legend.margin = margin(1,1,1,1,"mm"),
-    plot.margin = margin(1,1,1,1,"mm"),
+    legend.margin = margin(0,1,1,1,"mm"),
+    plot.margin = margin(0.5,1,0,1,"mm"),
     plot.title = element_text(size=tx-1),
     axis.text.x = element_text(size=tx-2),
-    axis.text.y = element_text(size=tx-2),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
     axis.title.x = element_text(size=tx-1),
     axis.title.y = element_text(size=tx-2)
   )
 
-ggsave("Figures/1d_all_CFR_world.png", width = 5, height = 2.3)
+# ggsave("Figures/1d_all_CFR_world.png", width = 5, height = 2.3)
+
+
+plot_grid(p_world_a, p_world_b, p_world_c, p_world_c, 
+          ncol = 1, rel_heights = c(1, 1, 1, 1.6))
+
+ggsave("Figures/1_world.png", width = 5, height = 6.5)
+
+
 
 db_cts %>%
   group_by(region) %>% 
@@ -189,8 +197,7 @@ limx <- max(db_prs$date) + 4
 
 tx <- 8
 
-
-db_prs %>%
+p_provs_a <- db_prs %>%
   ggplot()+
   geom_line(aes(date, new_c_pcp_sm, col = region), size = .5, alpha = .9) +
   scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
@@ -202,16 +209,15 @@ db_prs %>%
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(0,1,0,1,"mm"),
+    plot.margin = margin(1,1,0.5,1,"mm"),
     plot.title = element_text(size=tx-1),
     axis.text.x = element_blank(),
-    axis.text.y = element_text(size=tx-3),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
     axis.title.x = element_blank(),
     axis.title.y = element_text(size=tx-2)
   )
-ggsave("Figures/3a_new_cases_provinces.png", width = 5, height = 1.4)
 
-db_prs %>%
+p_provs_b <- db_prs %>%
   ggplot()+
   geom_line(aes(date, new_d_pcp_sm, col = region), size = .5, alpha = .9) +
   scale_x_date(limits = ymd(c("2020-03-01", d_max)), date_breaks = "1 month", date_labels = "%m/%y")+
@@ -223,17 +229,17 @@ db_prs %>%
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(0,1,0,1,"mm"),
+    plot.margin = margin(0.5,1,0.5,1,"mm"),
     plot.title = element_text(size=tx-1),
     axis.text.x = element_blank(),
-    axis.text.y = element_text(size=tx-3),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size=tx-2, margin = margin(0, 2, 0, 0,"mm"))
+    axis.title.y = element_text(size=tx-2)
   )
-ggsave("Figures/3b_new_deaths_provinces.png", width = 5, height = 1.4)
+# ggsave("Figures/3b_new_deaths_provinces.png", width = 5, height = 1.4)
 
 
-db_prs %>%
+p_provs_c <- db_prs %>%
   ggplot()+
   geom_line(aes(date, pos, col = region), size = .5, alpha = .9) +
   scale_y_continuous(labels = percent_format(accuracy = 1L), limits = c(0, 0.4)) +
@@ -247,16 +253,16 @@ db_prs %>%
   theme(
     panel.grid.minor = element_blank(),
     legend.position = "none",
-    plot.margin = margin(1,1,1,1,"mm"),
+    plot.margin = margin(0.5,1,0.5,1,"mm"),
     plot.title = element_text(size=tx-1),
     axis.text.x = element_blank(),
-    axis.text.y = element_text(size=tx-3),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
     axis.title.x = element_blank(),
     axis.title.y = element_text(size=tx-2)
   )
-ggsave("Figures/3c_pos_rate_provinces.png", width = 5, height = 1.4)
+# ggsave("Figures/3c_pos_rate_provinces.png", width = 5, height = 1.4)
 
-db_prs %>%
+p_provs_d <- db_prs %>%
   ggplot()+
   geom_line(aes(date, cfr_sm, col = region), size = .5, alpha = .8) +
   scale_y_continuous(labels = percent_format(accuracy = 1L)) +
@@ -274,15 +280,19 @@ db_prs %>%
     legend.title = element_text(size=tx),
     legend.text = element_text(size=tx-1),
     legend.margin = margin(1,1,1,1,"mm"),
-    plot.margin = margin(1,1,1,1,"mm"),
+    plot.margin = margin(0.5,1,0,1,"mm"),
     plot.title = element_text(size=tx-1),
     axis.text.x = element_text(size=tx-2),
-    axis.text.y = element_text(size=tx-3),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
     axis.title.x = element_text(size=tx-1),
     axis.title.y = element_text(size=tx-2)
   )
-ggsave("Figures/3d_all_CFR_over_time_provinces.png", width = 5, height = 2.3)
+# ggsave("Figures/3d_all_CFR_over_time_provinces.png", width = 5, height = 2.3)
 
+plot_grid(p_provs_a, p_provs_b, p_provs_c, p_provs_d, 
+          ncol = 1, rel_heights = c(1, 1, 1, 1.6))
+
+ggsave("Figures/3_provinces.png", width = 5, height = 6.5)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -342,3 +352,162 @@ sum_provs <- summary %>%
          prop_deaths = deaths / all_deaths)
 
   
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# CFR exclusively during the second wave 
+# (excluding cases and deaths that occurred during the first wave)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+col_country <- 
+  c("Other Prairies" = "grey70",
+    "Alberta" = "#66a61e",
+    "Atlantic" = "#e6ab02",
+    "British Columbia" = "#d95f02", 
+    "Territories" = "#7400b8",
+    "Canada" = "black",
+    "Quebec" = "#1E8FCC",
+    "Saskatchewan" = "grey60",
+    "Manitoba" = "#7400b8",
+    "Ontario" = "#e7298a",
+    "Spain" = "grey60",
+    "Canada" = "black",
+    "Denmark" = "#66a61e", 
+    "Italy" = "#d95f02", 
+    "Netherlands" = "#7400b8", 
+    "Sweden" = "#e6ab02", 
+    "US" = "#1E8FCC",
+    "Germany" = "#e7298a") 
+
+db_w2 <- read_rds("Output/covid_data_all_ages_selected_regions_wave2.rds")
+
+db_cts_w2 <- db_w2 %>% 
+  filter(region %in% cts) %>% 
+  mutate(region = factor(region, levels = cts))
+
+p_world_d_w1 <- db_cts %>%
+  filter(date >= "2020-08-01") %>% 
+  ggplot(aes(date, cfr_sm, col = region))+
+  geom_line(aes(size = country), size = .5, alpha = .9) +
+  scale_y_continuous(labels = percent_format(accuracy = 1L)) +
+  scale_x_date(limits = ymd(c("2020-08-01", d_max)), date_breaks = "1 month", date_labels = "%b/%Y")+
+  coord_cartesian(ylim = c(0, 0.04))+
+  scale_colour_manual(values = col_country)+
+  scale_size_manual(values = c(1,1,1,1,1,1,1,2))+
+  annotate(geom = "text", label = "A", 
+           x = ymd("2020-08-01"), y = Inf, hjust = 0.5, vjust = 2)+
+  labs(x = "Date",
+       y = "Overall CFR",
+       color = 'Country')+
+  theme_bw()+
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position = "none",
+    plot.margin = margin(0.5,1,0.5,1,"mm"),
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size=tx-2)
+  )
+
+p_world_d_w2 <- db_cts_w2 %>%
+  filter(date >= "2020-08-01") %>% 
+  ggplot(aes(date, cfr_w2_sm, col = region))+
+  geom_line(aes(size = country), size = .5, alpha = .9) +
+  scale_y_continuous(labels = percent_format(accuracy = 1L)) +
+  scale_x_date(limits = ymd(c("2020-08-01", d_max)), date_breaks = "1 month", date_labels = "%b/%Y")+
+  coord_cartesian(ylim = c(0, 0.04))+
+  scale_colour_manual(values = col_country)+
+  scale_size_manual(values = c(1,1,1,1,1,1,1,2))+
+  annotate(geom = "text", label = "B", 
+           x = ymd("2020-08-01"), y = Inf, hjust = 0.5, vjust = 2)+
+  labs(x = "Date",
+       y = "Overall CFR (only 2nd Wave)",
+       color = 'Country')+
+  theme_bw()+
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    legend.title = element_text(size=tx),
+    legend.text = element_text(size=tx-1),
+    legend.margin = margin(1,1,1,1,"mm"),
+    plot.margin = margin(1,1,1,1,"mm"),
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_text(size=tx-2),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
+    axis.title.x = element_text(size=tx-1),
+    axis.title.y = element_text(size=tx-2)
+  )
+
+plot_grid(p_world_d_w1, p_world_d_w2,
+          ncol = 1, rel_heights = c(1, 1.8))
+
+ggsave("Figures/1e_cfr_world_waves.png", width = 5, height = 3.5)
+
+
+# Provinces
+# ~~~~~~~~~
+
+db_prs_w2 <- db_w2 %>% 
+  filter(region %in% prs) %>% 
+  mutate(region = factor(region, levels = prs))
+
+p_provs_e_w1 <- db_prs %>%
+  filter(date >= "2020-08-01") %>% 
+  ggplot()+
+  geom_line(aes(date, cfr_sm, col = region), size = .5, alpha = .8) +
+  scale_y_continuous(labels = percent_format(accuracy = 1L)) +
+  scale_x_date(limits = ymd(c("2020-08-01", d_max)), date_breaks = "1 month", date_labels = "%b/%Y")+
+  coord_cartesian(ylim = c(0, 0.04))+
+  theme_bw()+
+  scale_colour_manual(values = col_country)+
+  annotate(geom = "text", label = "A", 
+           x = ymd("2020-08-01"), y = Inf, hjust = 0.5, vjust = 2)+
+  labs(x = "Date",
+       y = "Overall CFR",
+       color = 'Province')+
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position = "none",
+    plot.margin = margin(0.5,1,0.5,1,"mm"),
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size=tx-2)
+  )
+
+p_provs_e_w2 <- db_prs_w2 %>%
+  filter(date >= "2020-08-01") %>% 
+  ggplot(aes(date, cfr_w2_sm, col = region))+
+  geom_line(aes(size = country), size = .5, alpha = .9) +
+  scale_y_continuous(labels = percent_format(accuracy = 1L)) +
+  scale_x_date(limits = ymd(c("2020-08-01", d_max)), date_breaks = "1 month", date_labels = "%b/%Y")+
+  coord_cartesian(ylim = c(0, 0.04))+
+  scale_colour_manual(values = col_country)+
+  scale_size_manual(values = c(1,1,1,1,1,1,1,2))+
+  annotate(geom = "text", label = "B", 
+           x = ymd("2020-08-01"), y = Inf, hjust = 0.5, vjust = 2)+
+  labs(x = "Date",
+       y = "Overall CFR (only 2nd Wave)",
+       color = 'Country')+
+  theme_bw()+
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    legend.title = element_text(size=tx),
+    legend.text = element_text(size=tx-1),
+    legend.margin = margin(1,1,1,1,"mm"),
+    plot.margin = margin(1,1,1,1,"mm"),
+    plot.title = element_text(size=tx-1),
+    axis.text.x = element_text(size=tx-2),
+    axis.text.y = element_text(size=tx-2, angle = 90, hjust = 0.5),
+    axis.title.x = element_text(size=tx-1),
+    axis.title.y = element_text(size=tx-2)
+  )
+
+
+plot_grid(p_provs_e_w1, p_provs_e_w2,
+          ncol = 1, rel_heights = c(1, 1.8))
+
+ggsave("Figures/3e_cfr_provinces_waves.png", width = 5, height = 3.5)
+
+

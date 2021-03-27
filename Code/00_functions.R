@@ -25,7 +25,8 @@ pkgs <- c("tidyverse",
           "zoo",
           "googlesheets4",
           "googledrive",
-          "osfr")
+          "osfr",
+          "cowplot")
 
 
 # required packages for baseline estimation

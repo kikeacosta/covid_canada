@@ -76,12 +76,10 @@ cds <- c("DE_",
 # write_rds(db_cov2, "Data/backup/coverage_filtered_v20210220.rds")
 db_cov2 <- read_rds("Data/backup/coverage_filtered_v20210220.rds")
 
-unique(db_cov3$Code)
-
 db_cov3 <- db_cov2 %>% 
   filter(Sex == "b", 
          Region != "Alberta",
-         !(Region == "Ontario" & Date <= "2020-12-31"),
+         Region != "Ontario",
          !(Country == "Germany" & Date <= "2020-12-31")) %>% 
   mutate(Region = ifelse(Region == "All", Country, Region),
          Region = recode(Region,
@@ -91,7 +89,9 @@ db_cov3 <- db_cov2 %>%
                        "ES_M_" = "ES_M",
                        "DE_" = "DE",
                        "DE_BE_" = "DE_BE")) %>% 
-  bind_rows(db_add2)
+bind_rows(db_add2)
+
+unique(db_cov3$Code)
 
 last_dates <- db_cov3 %>%  
   group_by(Country, Region, Code) %>% 
@@ -139,12 +139,6 @@ comm_dates <- db_prv2 %>%
 
 d1 <- "2020-07-15"
 
-unique(db_prv_1st$Code)
-unique(db_prv_2nd$Code)
-unique(db_prv2$Code)
-unique(db_prv2$Sex)
-
-
 db_prv_1st <- db_prv2 %>% 
   filter(Date == d1,
          Code != "CA_BC") %>% 
@@ -169,7 +163,8 @@ db_prv_2nd <- db_prv2 %>%
          Type = "Province") %>% 
   filter(Code %in% provinces)
 
-unique(db_prv_2nd$Code)
+unique(db_prv_1st$Code) %>% sort
+unique(db_prv_2nd$Code) %>% sort
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Other countries and cities to compare 
@@ -227,7 +222,6 @@ ctys_2nd <- db_cov3 %>%
 
 unique(ctys_1st$Code)
 unique(ctys_2nd$Code)
-
 
 out <- bind_rows(db_prv_2nd, db_prv_1st,
                 ctrs_2nd, ctrs_1st,

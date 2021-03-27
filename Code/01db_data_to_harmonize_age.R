@@ -466,3 +466,60 @@ db_harm3 %>%
   geom_point(aes(Age, CFR, col = Date))
 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# in progress to add offsets to age harmonization
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+offsets <- read_csv("Data/offsets.csv",
+                    skip = 1)
+
+offsets_ca <- offsets %>% 
+  filter(Country == "Canada") %>% 
+  mutate(Region = recode(Region,
+                         "All" = "Canada"))
+
+unique(offsets_ca$Region)
+
+# population in single year ages for Canada and provinces
+pop <- read_csv("Data/17100005-eng.zip",
+                col_types = cols(.default = "c"))
+
+age_excls <- c("18 years and over", 
+               "65 years and over", 
+               "90 years and over", 
+               "Median age", 
+               "Average age")
+
+pop2 <- pop %>% 
+  rename(Region = GEO,
+         Year = REF_DATE,
+         Age = 'Age group',
+         Exposure = VALUE) %>% 
+  select(Region, Year, Age, Sex, Exposure) %>% 
+  filter(!str_detect(Age, " to "),
+         !(Age %in% age_excls),
+         Year == 2020) %>% 
+  mutate(Age = str_remove_all(Age, c(" years and over| years| year")),
+         Age = ifelse(Age == "All ages", "All", Age),
+         Sex = case_when(Sex == "Both sexes" ~ "b",
+                         Sex == "Males" ~ "m",
+                         Sex == "Females" ~ "f"),
+         Exposure = as.integer(Exposure),
+         Year = as.integer(Year)) %>% 
+  filter(Sex == "b")
+
+# age harmonization
+harmonize_age <- function(db, lambda = 100){
+  
+  Age <- db$Age %>% as.integer()
+  Value <- db$Value
+  nlast <- 105 - max(Age)
+  V1 <- pclm(x = Age, 
+             y = Value, 
+             nlast = nlast, 
+             control = list(lambda = lambda, deg = 3))$fitted
+  
+  out <- tibble(Age = seq(0, 104, 1), Value = V1) 
+  
+  return(out)
+}
